@@ -53,6 +53,10 @@ def test_install():
     assert required[0] in INSTALL
     assert "$book = $excel.Workbooks.Open(" in INSTALL
     assert INSTALL.index("$excel.Calculation = -4135") < INSTALL.index("$book = $excel.Workbooks.Open(")
+    assert INSTALL.index("$guardBook = $excel.Workbooks.Add()") < INSTALL.index("$excel.Calculation = -4135") < INSTALL.index("$book = $excel.Workbooks.Open("), "Excel LTSC requires a workbook before Application.Calculation"
+    assert "$guardBook.Close($false)" in INSTALL
+    assert "Initialize-TCCatalogs $book $form" in INSTALL
+    assert "routes_europe.json" in CATALOG_SCRIPT, "Route catalog is embedded during installation, not a separate working workbook"
     for token in (
         "$sheet.Range('B5').Value2 = ''", "$sheet.Range('B6').Value2 = 0",
         "$sheet.Range('B7').Value2 = ''", "$sheet.Range('B8').Value2 = ''",
