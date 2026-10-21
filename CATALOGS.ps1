@@ -60,51 +60,66 @@ function Initialize-TCCatalogs {
  $people.Range('A7').Value2='Водій_02'
  $people.Range('G6:G7').Value2='Активний'
 
- $routeHeaders=@('ID маршруту','Початок','Призначення','Км затверджені','Час, год','Дороги/країни','Усіх рейсів','Км факт','Контроль','Примітка','Закрито рейсів')
- $routes=New-TCCatalogSheet $book 'Маршрути_Європа' $routeHeaders 'K' 65
- $routes.Range('A3').Value2='Км не підставляємо навмання: адміністратор вводить відстань за погодженим маршрутом. Рейси рахує Excel.'
- foreach($col in @('A','B','C')){ $routes.Columns.Item($col).ColumnWidth=21 }
- $routes.Columns.Item('D').ColumnWidth=19
- $routes.Columns.Item('E').ColumnWidth=15
+ $routeHeaders=@('ID маршруту','Початок','Призначення','Відстань, км','Час, год','Коридор/країни','Усіх рейсів','Км факт','Надійність','Примітка','Закрито рейсів','Джерело URL','Рік джерела','Метод відстані','Примітки джерела','Дата внесення')
+ $routes=New-TCCatalogSheet $book 'Маршрути_Європа' $routeHeaders 'P' 205
+ $routes.Range('A3').Value2='Довідкові відстані з відкритих публікацій. НЕ сертифіковано для вантажівок/TIR. Маршрут і зворотний шлях потрібно перевіряти окремо.'
+ foreach($col in @('A','B','C')){ $routes.Columns.Item($col).ColumnWidth=22 }
+ $routes.Columns.Item('D').ColumnWidth=18
+ $routes.Columns.Item('E').ColumnWidth=14
  $routes.Columns.Item('F').ColumnWidth=26
  $routes.Columns.Item('G').ColumnWidth=16
  $routes.Columns.Item('H').ColumnWidth=16
- $routes.Columns.Item('I').ColumnWidth=21
- $routes.Columns.Item('J').ColumnWidth=36
+ $routes.Columns.Item('I').ColumnWidth=27
+ $routes.Columns.Item('J').ColumnWidth=46
  $routes.Columns.Item('K').ColumnWidth=19
- $routes.Range('D6:E65').NumberFormat='0.0'
- $seed=@(
-  @('WAW-BER','Варшава','Берлін'),
-  @('WAW-PRG','Варшава','Прага'),
-  @('WAW-VIE','Варшава','Відень'),
-  @('WAW-HAM','Варшава','Гамбург'),
-  @('WAW-AMS','Варшава','Амстердам'),
-  @('WAW-RTM','Варшава','Роттердам'),
-  @('WRO-DRE','Вроцлав','Дрезден'),
-  @('POZ-BER','Познань','Берлін'),
-  @('KRK-BUD','Краків','Будапешт'),
-  @('GDN-HAM','Гданськ','Гамбург'),
-  @('WAW-MIL','Варшава','Мілан'),
-  @('PRG-MUN','Прага','Мюнхен')
- )
- for($i=0;$i -lt $seed.Count;$i++){
-  $rr=$i+6
-  $routes.Cells.Item($rr,1).Value2=$seed[$i][0]
-  $routes.Cells.Item($rr,2).Value2=$seed[$i][1]
-  $routes.Cells.Item($rr,3).Value2=$seed[$i][2]
-  $routes.Cells.Item($rr,10).Value2='Шаблон · узгодити кілометраж'
+ $routes.Columns.Item('L').ColumnWidth=55
+ $routes.Columns.Item('M').ColumnWidth=15
+ $routes.Columns.Item('N').ColumnWidth=37
+ $routes.Columns.Item('O').ColumnWidth=66
+ $routes.Columns.Item('P').ColumnWidth=19
+ $routes.Range('D6:E205').NumberFormat='0.0'
+ $routes.Range('M6:M205').NumberFormat='0'
+ $routes.Range('P6:P205').NumberFormat='dd.mm.yyyy'
+ # Sources are managed as a UTF-8 JSON file, not an implicit Internet connection.
+ $routeDataPath=Join-Path $dir 'data\routes_europe.json'
+ if (!(Test-Path -LiteralPath $routeDataPath)) { throw "Не знайдено довідник маршрутів: $routeDataPath" }
+ $data=Get-Content -LiteralPath $routeDataPath -Raw -Encoding UTF8 | ConvertFrom-Json
+ if ($data.schema_version -ne '1.0') { throw 'Невідома схема довідника маршрутів' }
+ $routesIn=@($data.routes)
+ if ($routesIn.Count -gt 200) { throw "Каталог містить понад 200 маршрутів: $($routesIn.Count)" }
+ $ids=@{}
+ $now=[double]([datetime]::Today.ToOADate())
+ for($i=0;$i -lt $routesIn.Count;$i++){
+   $rr=$i+6
+   $entry=$routesIn[$i]
+   if ([string]::IsNullOrWhiteSpace([string]$entry.id) -or $ids.ContainsKey([string]$entry.id)) { throw "Порожній або повторний ID маршруту в рядку $rr" }
+   if ([double]$entry.km -le 0) { throw "Немає коректного кілометражу для $($entry.id)" }
+   if (([string]$entry.source) -notmatch '^https://') { throw "Маршрут без https-джерела: $($entry.id)" }
+   $ids[[string]$entry.id]=$true
+   $routes.Cells.Item($rr,1).Value2=[string]$entry.id
+   $routes.Cells.Item($rr,2).Value2=[string]$entry.from
+   $routes.Cells.Item($rr,3).Value2=[string]$entry.to
+   $routes.Cells.Item($rr,4).Value2=[double]$entry.km
+   if ($null -ne $entry.hours -and [string]$entry.hours -ne '') { $routes.Cells.Item($rr,5).Value2=[double]$entry.hours }
+   $routes.Cells.Item($rr,10).Value2='Довідковий маршрут; адреса доставки, TIR-допуски, платні дороги — уточнюються окремо.'
+   $routes.Cells.Item($rr,12).Value2=[string]$entry.source
+   $routes.Cells.Item($rr,13).Value2=[int]$entry.source_year
+   $routes.Cells.Item($rr,14).Value2=[string]$entry.kind
+   $routes.Cells.Item($rr,15).Value2=[string]$entry.remark
+   $routes.Cells.Item($rr,16).Value2=$now
  }
+ # Summary columns remain formulas, never hard-coded counts.
  $routes.Range('G6').Formula='=IF(A6="","",COUNTIF(Нарахування!$O$13:$O$132,A6))'
  $routes.Range('H6').Formula='=IF(A6="","",SUMIF(Нарахування!$O$13:$O$132,A6,Нарахування!$R$13:$R$132))'
- $routes.Range('I6').Formula='=IF(A6="","",IF(D6>0,"ГОТОВО","НЕМАЄ КМ"))'
+ $routes.Range('I6').Formula='=IF(A6="","",IF(D6<=0,"НЕМАЄ КМ",IF(ISNUMBER(SEARCH("Зворотн",N6)),"ЗВОРОТНИЙ ОРІЄНТИР",IF(M6<2024,"СТАРЕ ДЖЕРЕЛО","УТОЧНИТИ ДЛЯ TIR"))))'
  $routes.Range('K6').Formula='=IF(A6="","",COUNTIFS(Нарахування!$O$13:$O$132,A6,Нарахування!$L$13:$L$132,"ЗАКРИТО"))'
- $routes.Range('G6:G65').FillDown()
- $routes.Range('H6:H65').FillDown()
- $routes.Range('I6:I65').FillDown()
- $routes.Range('K6:K65').FillDown()
- $routes.Range('G6:I65').Interior.Color=14277081
- $routes.Range('K6:K65').Interior.Color=14277081
- $book.Names.Add('TC_Routes','=Маршрути_Європа!$A$6:$A$65') | Out-Null
+ $routes.Range('G6:G205').FillDown()
+ $routes.Range('H6:H205').FillDown()
+ $routes.Range('I6:I205').FillDown()
+ $routes.Range('K6:K205').FillDown()
+ $routes.Range('G6:I205').Interior.Color=14277081
+ $routes.Range('K6:K205').Interior.Color=14277081
+ $book.Names.Add('TC_Routes','=Маршрути_Європа!$A$6:$A$205') | Out-Null
 
  $profile=$book.Worksheets.Add([System.Type]::Missing,$book.Worksheets.Item('Звіти'))
  $profile.Name='Картка_водія'
