@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
+          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
@@ -59,4 +59,21 @@ jobs:
           $expected = "=COUNTIF('TC_Рейси'!" + '$E$6:$E$50000,A6)'
           if ($actual -cne $expected) { throw ('Incorrect Excel formula: '+$actual) }
           Write-Host 'Formula quoting and complete installer grammar OK'
+      - name: Validate offline v10.2 MSForms design-time API and v9 save order
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $scriptText=[System.IO.File]::ReadAllText((Resolve-Path 'deployment/offline-v10.2/INSTALL_OFFLINE.ps1').Path,[Text.Encoding]::UTF8)
+          if ($scriptText.Contains('$designer.Width=') -or $scriptText.Contains('$designer.Height=')) { throw 'Direct Designer.Width/Height regression' }
+          foreach($required in @(
+             "$" + "uiComponent.Properties.Item('Width').Value=710",
+             "$" + "uiComponent.Properties.Item('Height').Value=575",
+             "$" + "probeForm.Properties.Item('Width').Value = 210",
+             "$" + "probeControl.Move([single]12",
+             "$" + "book.SaveAs($" + "target,52)",
+             "$" + "book.Close($" + "false)"
+          )) {
+             if(-not $scriptText.Contains($required)) { throw ('Missing essential build operation: '+$required) }
+          }
+          Write-Host 'MSForms designer property path and v9 SaveAs/Close contract OK'
 # Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
