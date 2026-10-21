@@ -1,0 +1,10 @@
+# Working customer data stays local (repository is public).
+*.xlsm
+*.xlsx
+*.xlsb
+~$*
+_Резервні_копії/
+*.tmp
+*.log
+__pycache__/
+.DS_Store
