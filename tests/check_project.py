@@ -44,7 +44,7 @@ def test_install():
         "$sheet.Range('B5').Value2 = ''", "$sheet.Range('B6').Value2 = 0",
         "$sheet.Range('B7').Value2 = ''", "$sheet.Range('B8').Value2 = ''",
         "$rates.Range('G13:H52').ClearContents()",
-        "='Реєстр_водіїв", "=Реєстр_водіїв!$A$13:$A$52",
+        "=Реєстр_водіїв!$A$13:$A$52",
         "$form.Range('B5').Validation.Add(3,1,1,'=TC_Drivers')",
         "$book.SaveAs($destinationPath, 52)",
     ):
