@@ -168,6 +168,36 @@ failed:
 End Sub
 
 ' ЄДИНА ТОЧКА ІНТЕРНЕТ-ЗАПИТІВ. Не викликати з Workbook_Open/Calculate/Change.
+
+Public Sub СформуватиЗвіт()
+    On Error GoTo failed
+    Dim folder As String, pathName As String
+    If Len(ThisWorkbook.Path) = 0 Then Err.Raise 1401, , "Спочатку збережіть книгу."
+    folder = ThisWorkbook.Path & Application.PathSeparator & "_Звіти"
+    If Dir(folder, vbDirectory) = "" Then MkDir folder
+    pathName = folder & Application.PathSeparator & "Звіт_" & Format(Now, "yyyymmdd_hhnnss") & ".pdf"
+    Ws("Звіти").ExportAsFixedFormat Type:=0, Filename:=pathName, Quality:=0, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+    MsgBox "PDF-звіт сформовано:" & vbCrLf & pathName, vbInformation
+    Exit Sub
+failed:
+    MsgBox "Не вдалося створити звіт: " & Err.Description, vbExclamation
+End Sub
+
+Public Sub ВідновитиРезервнуКопію()
+    On Error GoTo failed
+    Dim folder As String
+    If Len(ThisWorkbook.Path) = 0 Then Err.Raise 1501, , "Спочатку збережіть книгу."
+    folder = ThisWorkbook.Path & Application.PathSeparator & BACKUP_FOLDER
+    If Dir(folder, vbDirectory) = "" Then Err.Raise 1502, , "Резервних копій поки немає."
+    Shell "explorer.exe " & Chr$(34) & folder & Chr$(34), vbNormalFocus
+    MsgBox "Для відновлення закрийте Excel і запустіть RESTORE_BACKUP.cmd з папки програми." & vbCrLf & _
+        "Поточна версія буде збережена перед відновленням.", vbInformation
+    Exit Sub
+failed:
+    MsgBox Err.Description, vbExclamation
+End Sub
+
 ' ONLY explicit button launches a web request.
 Public Sub ОновитиЗІнтернету()
     On Error GoTo failed
