@@ -47,7 +47,7 @@ try {
   $form.Range('A1:B19').Font.Name = 'Times New Roman'
   $form.Range('A1:B19').Font.Size = 14
   $form.Range('B5:B18').Interior.Color = 15136253
-  $book.Names.Add('TC_Drivers', "='Реєстр_водіїв'!\$A\$13:\$A\$52") | Out-Null
+  $book.Names.Add('TC_Drivers', '=\'Реєстр_водіїв\'!$A$13:$A$52') | Out-Null
   $form.Range('B5').Validation.Delete()
   $form.Range('B5').Validation.Add(3,1,1,'=TC_Drivers') # Excel drop-down: registered drivers
   $form.Range('D5').Value2 = 'Веб-дані оновлюються ТІЛЬКИ окремою кнопкою.'
@@ -81,7 +81,7 @@ try {
   Add-TcButton $contents 'Оновити з інтернету' 'ОновитиЗІнтернету' 620 212
   Add-TcButton $contents 'Закрити рейс' 'ЗакритиРейс' 620 255
   # Keep the content index physically FIRST as required.
-  $contents.Move($book.Worksheets.Item(1))
+  if ($book.Worksheets.Item(1).Name -ne 'Зміст') { $contents.Move($book.Worksheets.Item(1)) }
   $excel.Calculation = -4105 # xlCalculationAutomatic: arithmetic works; web formulas are removed
   $book.SaveAs($destinationPath, 52)
   if ($book.Worksheets.Item(1).Name -ne 'Зміст') { throw 'Зміст не є першим аркушем!' }
