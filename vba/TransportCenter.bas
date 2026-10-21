@@ -28,11 +28,12 @@ End Sub
 
 Public Sub ЗаповнитиДані()
     On Error GoTo failed
-    With Ws(FORM_NAME)
-        .Range("B6").Value = Date
-        .Activate
-        .Range("B5").Select
-    End With
+    Dim f As Worksheet
+    Set f = Ws(FORM_NAME)
+    f.Range("B5:B18").ClearContents
+    f.Range("B6").Value = Date
+    f.Activate
+    f.Range("B5").Select
     Exit Sub
 failed:
     MsgBox "Форму не встановлено: " & Err.Description, vbExclamation
@@ -81,6 +82,7 @@ Public Sub ЗберегтиДані()
     a.Cells(q, 5).Value = CDbl(f.Range("B13").Value)
     a.Cells(q, 6).Value = CDbl(f.Range("B14").Value)
     a.Cells(q, 11).Value = f.Range("B17").Value
+    If IsNumeric(f.Range("B18").Value) Then d.Cells(r, 10).Value = CDbl(f.Range("B18").Value)
     Ws("Журнал_операцій").Cells(Ws("Журнал_операцій").Rows.Count, 1).End(xlUp).Offset(1, 0).Resize(1, 4).Value = Array(Now, Environ$("USERNAME"), "CREATE_TRIP", tripID)
     Application.EnableEvents = oldEvents
     Application.Calculate
@@ -116,6 +118,8 @@ Public Sub ДодатиВодія()
     Call BackupNow("before_driver")
     Ws("ШАБЛОН_ВОДІЯ").Copy Before:=Ws("КІНЕЦЬ_ВОДІЇВ")
     Set sh = ActiveSheet: sh.Name = nm
+    sh.Range("B5").Value = fullName
+    sh.Range("E5").Value = vehicle
     rg.Cells(r, 1).Value = nm
     rg.Cells(r, 2).Value = fullName
     rg.Cells(r, 3).Value = vehicle
@@ -130,15 +134,47 @@ Public Sub ПерейтиДоЗвітів()
 End Sub
 
 Public Sub ЗакритиРейс()
-    MsgBox "Закриття рейсу потребує перевірки всіх витрат і документів. На цьому етапі операцію не виконано.", vbInformation
+    On Error GoTo failed
+    Dim id As String, a As Worksheet, d As Worksheet, q As Long, i As Long, hasCost As Boolean
+    Set a = Ws("Нарахування")
+    id = Trim$(InputBox("ID рейсу для закриття:", "Закрити рейс"))
+    If Len(id) = 0 Then Exit Sub
+    For q = 13 To 132
+        If StrComp(Trim$(CStr(a.Cells(q, 1).Value2)), id, vbTextCompare) = 0 Then Exit For
+    Next q
+    If q > 132 Then Err.Raise 1301, , "Рейс не знайдено у нарахуваннях."
+    If UCase$(Trim$(CStr(a.Cells(q, 12).Value2))) = "ЗАКРИТО" Then Err.Raise 1302, , "Рейс уже закрито."
+    Application.Calculate
+    If Trim$(CStr(a.Cells(q, 10).Value)) <> "OK" Then Err.Raise 1303, , "Спочатку усуньте помилки нарахування."
+    Set d = Ws(CStr(a.Cells(q, 2).Value))
+    For i = 102 To 201
+        If StrComp(Trim$(CStr(d.Cells(i, 1).Value2)), id, vbTextCompare) = 0 Then
+            hasCost = True
+            If Trim$(CStr(d.Cells(i, 15).Value)) <> "OK" Then Err.Raise 1304, , "Є помилкові витрати, рядок " & i & "."
+        End If
+    Next i
+    If MsgBox("Закрити рейс " & id & "?" & vbCrLf & "Витратні операції: " & IIf(hasCost, "є", "немає"), vbQuestion + vbYesNo) <> vbYes Then Exit Sub
+    Call BackupNow("before_close")
+    a.Cells(q, 12).Value = "ЗАКРИТО"
+    a.Cells(q, 13).Value = Now
+    a.Cells(q, 14).Value = Environ$("USERNAME")
+    With Ws("Журнал_операцій")
+        .Cells(.Rows.Count, 1).End(xlUp).Offset(1, 0).Resize(1, 4).Value = Array(Now, Environ$("USERNAME"), "CLOSE_TRIP", id)
+    End With
+    MsgBox "Рейс закрито. Резервну копію збережено.", vbInformation
+    Exit Sub
+failed:
+    MsgBox Err.Description, vbExclamation
 End Sub
 
 ' ЄДИНА ТОЧКА ІНТЕРНЕТ-ЗАПИТІВ. Не викликати з Workbook_Open/Calculate/Change.
+' ONLY explicit button launches a web request.
 Public Sub ОновитиЗІнтернету()
     On Error GoTo failed
-    Dim req As Object, doc As Object, node As Object
-    Dim rateText As String, rateDate As String, rate As Double, backupPath As String
-    If MsgBox("Оновити курс USD/PLN з NBP вручну?" & vbCrLf & "Паркінги без окремого перевіреного API не змінюватимуться.", vbYesNo + vbQuestion) <> vbYes Then Exit Sub
+    Dim req As Object, doc As Object, node As Object, rate As Double
+    Dim effectiveDate As Date, stamp As String, hist As Worksheet, i As Long, target As Long
+    If MsgBox("Отримати курс USD/PLN з NBP?" & vbCrLf & _
+        "Автоматичного оновлення немає. Ціни паркінгів не зміняться.", vbYesNo + vbQuestion) <> vbYes Then Exit Sub
     Set req = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     req.setTimeouts 5000, 5000, 10000, 10000
     req.Open "GET", "https://api.nbp.pl/api/exchangerates/rates/a/usd/?format=xml", False
@@ -148,21 +184,43 @@ Public Sub ОновитиЗІнтернету()
     doc.async = False
     If Not doc.LoadXML(req.responseText) Then Err.Raise 1202, , "Невірна XML-відповідь NBP."
     Set node = doc.SelectSingleNode("//*[local-name()='Mid']")
-    If node Is Nothing Then Err.Raise 1203, , "У відповіді немає Mid."
-    rateText = node.Text
-    rate = Val(Replace(rateText, ",", "."))
-    If rate < 1 Or rate > 10 Then Err.Raise 1204, , "Нетиповий USD/PLN; нічого не змінено."
+    If node Is Nothing Then Err.Raise 1203, , "Немає курсу Mid."
+    rate = Val(Replace(node.Text, ",", "."))
+    If rate < 1 Or rate > 10 Then Err.Raise 1204, , "Нетиповий курс: зміни скасовано."
     Set node = doc.SelectSingleNode("//*[local-name()='EffectiveDate']")
     If node Is Nothing Then Err.Raise 1205, , "Немає дати NBP."
-    rateDate = node.Text
-    If Not IsDate(rateDate) Then Err.Raise 1206, , "Некоректна дата NBP."
-    backupPath = BackupNow("before_online")
+    stamp = Trim$(node.Text)
+    If Len(stamp) <> 10 Or Mid$(stamp, 5, 1) <> "-" Or Mid$(stamp, 8, 1) <> "-" Then Err.Raise 1206, , "Помилковий формат дати NBP."
+    effectiveDate = DateSerial(CInt(Left$(stamp, 4)), CInt(Mid$(stamp, 6, 2)), CInt(Right$(stamp, 2)))
+    If Format$(effectiveDate, "yyyy-mm-dd") <> stamp Then Err.Raise 1207, , "Неправильна дата NBP."
+    Set hist = Ws("Курси_NBP")
+    target = 0
+    For i = 13 To 52
+        If IsNumeric(hist.Cells(i, 1).Value2) And Len(CStr(hist.Cells(i, 1).Value2)) > 0 Then
+            If CDbl(hist.Cells(i, 1).Value2) = CDbl(effectiveDate) Then
+                target = -1
+                If Abs(CDbl(hist.Cells(i, 2).Value2) - rate) > 0.000001 Then Err.Raise 1208, , "Котирування за цю дату відрізняється. Перевірте історію вручну."
+                Exit For
+            End If
+        ElseIf target = 0 Then
+            target = i
+        End If
+    Next i
+    If target = 0 Then Err.Raise 1209, , "Історія курсів заповнена. Дані не змінено."
+    Call BackupNow("before_online")
+    If target > 0 Then
+        hist.Cells(target, 1).Value = effectiveDate
+        hist.Cells(target, 2).Value = rate
+        hist.Cells(target, 5).Value = "NBP • ручне оновлення"
+        hist.Cells(target, 6).Value = "https://api.nbp.pl/"
+    End If
     Ws("NBP_дані").Range("B6").Value = rate
-    Ws("NBP_дані").Range("B7").Value = rateDate
+    Ws("NBP_дані").Range("B7").Value = stamp
     Ws("Налаштування").Range("B15").Value = "NBP вручну: " & Format(Now, "dd.mm.yyyy hh:nn")
-    Application.Calculate
-    MsgBox "Курс " & Format(rate, "0.0000") & " PLN/USD станом на " & rateDate & vbCrLf & "Паркінги не змінено.", vbInformation
+    Ws("Налаштування").Calculate
+    MsgBox "Курс " & Format(rate, "0.0000") & " PLN/USD, дата " & stamp & vbCrLf & _
+        "Паркінги не оновлювалися.", vbInformation
     Exit Sub
 failed:
-    MsgBox "Онлайн-оновлення не виконано. Попередній курс збережено." & vbCrLf & Err.Description, vbExclamation
+    MsgBox "Онлайн-оновлення не виконано. Попередній курс не змінено." & vbCrLf & Err.Description, vbExclamation
 End Sub
