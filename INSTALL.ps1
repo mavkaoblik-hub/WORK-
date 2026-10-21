@@ -85,6 +85,8 @@ try {
   Add-TcButton $contents 'Резервна копія' 'РезервнаКопія' 620 169
   Add-TcButton $contents 'Оновити з інтернету' 'ОновитиЗІнтернету' 620 212
   Add-TcButton $contents 'Закрити рейс' 'ЗакритиРейс' 620 255
+  Add-TcButton $contents 'PDF-звіт' 'СформуватиЗвіт' 620 298
+  Add-TcButton $contents 'Відновити копію' 'ВідновитиРезервнуКопію' 620 341
   # Keep the content index physically FIRST as required.
   if ($book.Worksheets.Item(1).Name -ne 'Зміст') { $contents.Move($book.Worksheets.Item(1)) }
   $excel.Calculation = -4105 # xlCalculationAutomatic: arithmetic works; web formulas are removed
