@@ -15,17 +15,27 @@ if (!(Test-Path -LiteralPath $catalogModulePath)) { throw "Не знайдено
 if (!(Test-Path -LiteralPath $catalogScriptPath)) { throw "Не знайдено каталогізатор: $catalogScriptPath" }
 . $catalogScriptPath
 if (Test-Path -LiteralPath $destinationPath) { throw "Файл $Destination вже існує. Перейменуйте його або збережіть окремо. Перезапис заборонено." }
-$excel = $null; $book = $null
+$excel = $null; $book = $null; $guardBook = $null
 try {
   $excel = New-Object -ComObject Excel.Application
   $excel.Visible = $false
   $excel.DisplayAlerts = $false
   $excel.ScreenUpdating = $false
-  $excel.Calculation = -4135 # xlCalculationManual: prevent web formulas evaluating on source open
   $excel.AutomationSecurity = 3 # disable macros while importing source
   $excel.EnableEvents = $false
   $excel.AskToUpdateLinks = $false
+  # In Excel LTSC, assigning Application.Calculation with NO workbook open can
+  # throw 0x800A03EC. Create a disposable empty book before manual mode.
+  # IMPORTANT: prevent legacy WEBSERVICE formulas from running at open.
+  $guardBook = $excel.Workbooks.Add()
+  try {
+    $excel.Calculation = -4135 # xlCalculationManual
+  } catch {
+    throw ("Cannot disable recalculation safely before opening source XLSX: " + $_.Exception.Message)
+  }
   $book = $excel.Workbooks.Open($sourcePath, 0, $false)
+  $guardBook.Close($false)
+  $guardBook = $null
   # Freeze every previous Excel web-function BEFORE installing the explicit-only update button.
   # Old WEBSERVICE/FILTERXML formulas would otherwise re-fetch on ordinary F9.
   $sheet = $book.Worksheets.Item('NBP_дані')
@@ -127,7 +137,8 @@ try {
   Write-Host 'Автоматичні вебформули відключено. Інтернет-запити тільки після натискання кнопки.'
 }
 finally {
- if ($book -ne $null) { $book.Close($false) }
- if ($excel -ne $null) { $excel.Quit() }
+ if ($book -ne $null) { try { $book.Close($false) } catch { Write-Warning $_.Exception.Message } }
+ if ($guardBook -ne $null) { try { $guardBook.Close($false) } catch { Write-Warning $_.Exception.Message } }
+ if ($excel -ne $null) { try { $excel.Quit() } catch { Write-Warning $_.Exception.Message } }
  [GC]::Collect(); [GC]::WaitForPendingFinalizers()
 }
