@@ -63,7 +63,12 @@ try {
   $audit.Columns.Item('A').ColumnWidth = 23; $audit.Columns.Item('B').ColumnWidth = 20
   $audit.Columns.Item('C').ColumnWidth = 24; $audit.Columns.Item('D').ColumnWidth = 28
   # Trust access to VBA project object model is necessary only during installation.
-  $vbcomp = $book.VBProject.VBComponents.Import($modulePath)
+  # Avoid legacy ANSI .bas Import: preserve Ukrainian VBA names via Unicode COM BSTR.
+  $vbaText = [System.IO.File]::ReadAllText($modulePath, [System.Text.Encoding]::UTF8)
+  $vbaText = $vbaText -replace '(?m)^Attribute VB_Name = "[^"]*"\r?\n', ''
+  $vbcomp = $book.VBProject.VBComponents.Add(1) # vbext_ct_StdModule
+  $vbcomp.Name = 'TransportCenter'
+  $vbcomp.CodeModule.AddFromString($vbaText)
   function Add-TcButton($sheet, [string]$caption, [string]$macro, [int]$x, [int]$y) {
     $shape = $sheet.Shapes.AddShape(5,$x,$y,173,33)
     $shape.TextFrame.Characters().Text = $caption
