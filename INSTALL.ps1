@@ -33,6 +33,20 @@ try {
   $settings = $book.Worksheets.Item('Налаштування')
   $settings.Range('B11').Value2 = 'Вручну: кнопка Оновити з інтернету'
   $settings.Range('B15').Value2 = 'Автоматичні інтернет-запити вимкнено'
+  # Replace obsolete v8 instructions; ordinary F9 must never access the Internet.
+  $book.Worksheets.Item('Зміст').Range('A27').Value2 = 'ВОДІЇ · додаються кнопкою «Додати водія»'
+  $book.Worksheets.Item('Панель').Range('A22').Value2 = '4. Курс USD/PLN: лише кнопка «Оновити з інтернету»; F9 нічого не завантажує.'
+  $book.Worksheets.Item('Налаштування').Range('A3').Value2 = 'USD/PLN · запит до NBP тільки після натискання відповідної кнопки'
+  $book.Worksheets.Item('Курси_NBP').Range('A3').Value2 = 'Збережена історія NBP; новий курс надходить лише за ручною командою.'
+  $book.Worksheets.Item('NBP_дані').Range('A3').Value2 = 'Технічні дані: автоматичні онлайн-функції вимкнено.'
+  $book.Worksheets.Item('Інструкція').Range('A3').Value2 = 'Excel LTSC для Windows · макроси VBA · онлайн-оновлення тільки кнопкою'
+  $book.Worksheets.Item('Інструкція').Range('B6').Value2 = 'Відкривайте Транспортний_центр.xlsm у настільному Microsoft Excel і дозволяйте лише довірені макроси.'
+  $book.Worksheets.Item('Інструкція').Range('B7').Value2 = 'Курс NBP оновлюється виключно кнопкою «Оновити з інтернету» на вкладці «Зміст». F9 не завантажує нічого.'
+  $book.Worksheets.Item('Інструкція').Range('B10').Value2 = 'Відкрийте «Зміст» та натисніть «Додати водія» — реєстр і аркуш створюються однією дією.'
+  $book.Worksheets.Item('Інструкція').Range('B18').Value2 = 'Адміністратор натискає «Заповнити дані», обирає водія, заповнює форму й зберігає рейс.'
+  $book.Worksheets.Item('Інструкція').Range('B21').Value2 = 'Тарифи паркінгів в цій збірці не оновлюються з мережі. Вони зберігаються в довіднику.'
+  $book.Worksheets.Item('Контроль_паркінгів').Range('A11').Value2 = '1. У цій макросній версії інтернет-оновлення паркінгів ще не підключене.'
+  $book.Worksheets.Item('Контроль_паркінгів').Range('A20').Value2 = '10. Автоматичних мережевих перевірок і фонових оновлень немає.'
   # Lightweight administrator panel; no UserForm dependencies.
   $form = $book.Worksheets.Add([System.Type]::Missing, $book.Worksheets.Item('Зміст'))
   $form.Name = 'Форма_адміністратора'
