@@ -325,7 +325,7 @@ try {
     if($parkCount -ge 150){break}
   }
   Write-Host ('Паркінги: '+$parkCount+' історичних пакетів внесено, до 150 місць попередньо підготовлено.')
-  $activity=Catalog $book 'TC_Події' @('Час','Користувач','Операція','Об’єкт') 'D' 55
+  $activity=Catalog $book 'TC_Події' @('Час','Користувач','Операція',"Об'єкт") 'D' 55
   $activity.Columns.Item('C').ColumnWidth=30
   $activity.Columns.Item('D').ColumnWidth=42
   $activity.Range('A6:D55').Interior.Color=14277081
