@@ -32,6 +32,12 @@ Public Sub ЗаповнитиДані()
     Set f = Ws(FORM_NAME)
     f.Range("B5:B18").ClearContents
     f.Range("B6").Value = Date
+    f.Range("B9").Value = Date
+    f.Range("B10").Value = Date
+    f.Range("B14").Value = 0
+    f.Range("B15").Value = 0
+    f.Range("B16").Value = 0
+    f.Range("B18").Value = 0
     f.Activate
     f.Range("B5").Select
     Exit Sub
