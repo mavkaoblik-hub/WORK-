@@ -51,8 +51,9 @@ function Initialize-TCCatalogs {
  $people.Range('D6:D65').NumberFormat='@'
  $people.Range('E6:E65').Validation.Add(3,1,1,'=TC_Cars')
  $people.Range('G6:G65').Validation.Add(3,1,1,'Активний,Відпустка,Неактивний')
- $people.Range('H6').Formula='=IF(AND(B6="",C6=""),"",TRIM(B6&" "&C6))'
+ $people.Range('H6').Formula='=IF(A6="","",IF(AND(B6="",C6=""),A6,TRIM(B6&" "&C6)&" ["&A6&"]"))'
  $people.Range('H6:H65').FillDown()
+ $book.Names.Add('TC_DriverDisplay','=Контакти_водіїв!$H$6:$H$65') | Out-Null
  $people.Range('H6:H65').Interior.Color=14277081
  # Preserve existing two driver tabs: placeholder IDs, no invented personal details.
  $people.Range('A6').Value2='Водій_01'
@@ -140,8 +141,8 @@ function Initialize-TCCatalogs {
  $form.Range('E5').Font.Bold=$true
  $calcLabels=@('Водій ПІБ','Авто (ID)','Марка / номер','Норма, л/100 км','Маршрут, км','Ціна PLN/л','Прогноз, літри','Прогноз, PLN','Орієнтовно USD','Статус прогнозу','Виконано рейсів','Маршрут (міста)')
  for($i=0;$i -lt $calcLabels.Count;$i++){$form.Cells.Item($i+7,5).Value2=$calcLabels[$i]}
- $form.Range('F7').Formula='=IF($B$5="","",IFERROR(INDEX(Контакти_водіїв!$H$6:$H$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0)),""))'
- $form.Range('F8').Formula='=IF($B$19<>"",$B$19,IF($B$5="","",IFERROR(IF(INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0))=0,"",INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0))),"")))'
+ $form.Range('F7').Formula='=IF($B$5="","",$B$5)'
+ $form.Range('F8').Formula='=IF($B$19<>"",$B$19,IF($B$5="","",IFERROR(IF(INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$H$6:$H$65,0))=0,"",INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0))),"")))'
  $form.Range('F9').Formula='=IF(F8="","",IFERROR(INDEX(Автопарк!$B$6:$B$65,MATCH(F8,Автопарк!$A$6:$A$65,0))&" "&INDEX(Автопарк!$C$6:$C$65,MATCH(F8,Автопарк!$A$6:$A$65,0))&" / "&INDEX(Автопарк!$D$6:$D$65,MATCH(F8,Автопарк!$A$6:$A$65,0)),""))'
  $form.Range('F10').Formula='=IF(F8="","",IFERROR(INDEX(Автопарк!$F$6:$F$65,MATCH(F8,Автопарк!$A$6:$A$65,0)),0))'
  $form.Range('F11').Formula='=IF($B$21>0,$B$21,IFERROR(INDEX(Маршрути_Європа!$D$6:$D$65,MATCH($B$8,Маршрути_Європа!$A$6:$A$65,0)),0))'
