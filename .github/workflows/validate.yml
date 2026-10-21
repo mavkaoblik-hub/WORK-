@@ -106,4 +106,28 @@ jobs:
             if(-not $app.Contains($required)) {throw ('v10.4 driver list regression: '+$required)}
           }
           Write-Host 'v10.4 KPI layout and deferred form lifecycle checks passed'
+      - name: Check v10.5 workbook ownership before modal UI
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $p=(Resolve-Path 'deployment/offline-v10.5/TransportApp.bas').Path
+          $vb=[IO.File]::ReadAllText($p,[Text.Encoding]::UTF8)
+          $expected=@(
+            'Private mHostBook As Workbook'
+            'Set mHostBook = ThisWorkbook'
+            'For Each candidate In mHostBook.Worksheets'
+            'Set master = WS('
+            'frmTCAdmin.Show vbModal'
+            'Set ws = WS('
+            'driverList.AddItem caption'
+            'initStage ='
+          )
+          foreach($item in $expected) {
+            if(-not $vb.Contains($item)) { throw ('Missing v10.5 VBA safety operation: '+$item) }
+          }
+          $probePos=$vb.IndexOf('Set master = WS(')
+          $showPos=$vb.IndexOf('frmTCAdmin.Show vbModal')
+          if($probePos -lt 0 -or $showPos -le $probePos) {throw 'Workbook lookup must precede showing the form'}
+          if($vb.Contains('f.cboDriver.')) {throw 'Unsupported direct MSForms control reference'}
+          Write-Host 'v10.5 host workbook lifetime and driver access checks passed'
 # Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
