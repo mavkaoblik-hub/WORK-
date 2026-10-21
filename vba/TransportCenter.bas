@@ -50,9 +50,15 @@ Public Sub ЗберегтиДані()
     On Error GoTo failed
     Dim f As Worksheet, d As Worksheet, a As Worksheet, driver As String, tripID As String
     Dim r As Long, q As Long, backupPath As String, oldEvents As Boolean
+    Dim driverPos As Variant, driverDisplay As String, directory As Worksheet
     Set f = Ws(FORM_NAME): Set a = Ws("Нарахування")
-    driver = Trim$(CStr(f.Range("B5").Value))
-    If Application.CountIf(Ws("Реєстр_водіїв").Range("A13:A52"), driver) <> 1 Then Err.Raise 1002, , "Оберіть зареєстрованого водія."
+    Set directory = Ws("Контакти_водіїв")
+    driverDisplay = Trim$(CStr(f.Range("B5").Value))
+    driverPos = Application.Match(driverDisplay, directory.Range("H6:H65"), 0)
+    If IsError(driverPos) Then Err.Raise 1002, , "Оберіть водія із довідника."
+    driver = Trim$(CStr(directory.Cells(CLng(driverPos) + 5, 1).Value))
+    If Application.CountIf(Ws("Реєстр_водіїв").Range("A13:A52"), driver) <> 1 Then _
+        Err.Raise 1002, , "Цей водій не зареєстрований у реєстрі."
     Set d = Ws(driver)
     If Not IsDate(f.Range("B6").Value) Or Not IsDate(f.Range("B9").Value) Or Not IsDate(f.Range("B10").Value) Then Err.Raise 1003, , "Перевірте дати."
     If CDate(f.Range("B10").Value) < CDate(f.Range("B9").Value) Then Err.Raise 1004, , "Дата прибуття раніше виїзду."
