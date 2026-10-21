@@ -1,0 +1,23 @@
+name: Validate Transport Center sources
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate VBA and installer source
+        run: python3 tests/check_project.py
+
+# This workflow deliberately does not execute VBA or Excel.
+# Full Excel COM tests require a separately provisioned Windows runner
+# with a licensed Microsoft Excel installation.
