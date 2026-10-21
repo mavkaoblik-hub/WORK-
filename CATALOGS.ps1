@@ -59,8 +59,8 @@ function Initialize-TCCatalogs {
  $people.Range('A7').Value2='Водій_02'
  $people.Range('G6:G7').Value2='Активний'
 
- $routeHeaders=@('ID маршруту','Початок','Призначення','Км затверджені','Час, год','Дороги/країни','Рейсів факт','Км факт','Контроль','Примітка')
- $routes=New-TCCatalogSheet $book 'Маршрути_Європа' $routeHeaders 'J' 65
+ $routeHeaders=@('ID маршруту','Початок','Призначення','Км затверджені','Час, год','Дороги/країни','Усіх рейсів','Км факт','Контроль','Примітка','Закрито рейсів')
+ $routes=New-TCCatalogSheet $book 'Маршрути_Європа' $routeHeaders 'K' 65
  $routes.Range('A3').Value2='Км не підставляємо навмання: адміністратор вводить відстань за погодженим маршрутом. Рейси рахує Excel.'
  foreach($col in @('A','B','C')){ $routes.Columns.Item($col).ColumnWidth=21 }
  $routes.Columns.Item('D').ColumnWidth=19
@@ -70,6 +70,7 @@ function Initialize-TCCatalogs {
  $routes.Columns.Item('H').ColumnWidth=16
  $routes.Columns.Item('I').ColumnWidth=21
  $routes.Columns.Item('J').ColumnWidth=36
+ $routes.Columns.Item('K').ColumnWidth=19
  $routes.Range('D6:E65').NumberFormat='0.0'
  $seed=@(
   @('WAW-BER','Варшава','Берлін'),
@@ -95,10 +96,13 @@ function Initialize-TCCatalogs {
  $routes.Range('G6').Formula='=IF(A6="","",COUNTIF(Нарахування!$O$13:$O$132,A6))'
  $routes.Range('H6').Formula='=IF(A6="","",SUMIF(Нарахування!$O$13:$O$132,A6,Нарахування!$R$13:$R$132))'
  $routes.Range('I6').Formula='=IF(A6="","",IF(D6>0,"ГОТОВО","НЕМАЄ КМ"))'
+ $routes.Range('K6').Formula='=IF(A6="","",COUNTIFS(Нарахування!$O$13:$O$132,A6,Нарахування!$L$13:$L$132,"ЗАКРИТО"))'
  $routes.Range('G6:G65').FillDown()
  $routes.Range('H6:H65').FillDown()
  $routes.Range('I6:I65').FillDown()
+ $routes.Range('K6:K65').FillDown()
  $routes.Range('G6:I65').Interior.Color=14277081
+ $routes.Range('K6:K65').Interior.Color=14277081
  $book.Names.Add('TC_Routes','=Маршрути_Європа!$A$6:$A$65') | Out-Null
 
  $profile=$book.Worksheets.Add([System.Type]::Missing,$book.Worksheets.Item('Звіти'))
@@ -137,7 +141,7 @@ function Initialize-TCCatalogs {
  $calcLabels=@('Водій ПІБ','Авто (ID)','Марка / номер','Норма, л/100 км','Маршрут, км','Ціна PLN/л','Прогноз, літри','Прогноз, PLN','Орієнтовно USD','Статус прогнозу','Виконано рейсів','Маршрут (міста)')
  for($i=0;$i -lt $calcLabels.Count;$i++){$form.Cells.Item($i+7,5).Value2=$calcLabels[$i]}
  $form.Range('F7').Formula='=IF($B$5="","",IFERROR(INDEX(Контакти_водіїв!$H$6:$H$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0)),""))'
- $form.Range('F8').Formula='=IF($B$19<>"",$B$19,IFERROR(INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0)),""))'
+ $form.Range('F8').Formula='=IF($B$19<>"",$B$19,IF($B$5="","",IFERROR(IF(INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0))=0,"",INDEX(Контакти_водіїв!$E$6:$E$65,MATCH($B$5,Контакти_водіїв!$A$6:$A$65,0))),"")))'
  $form.Range('F9').Formula='=IF(F8="","",IFERROR(INDEX(Автопарк!$B$6:$B$65,MATCH(F8,Автопарк!$A$6:$A$65,0))&" "&INDEX(Автопарк!$C$6:$C$65,MATCH(F8,Автопарк!$A$6:$A$65,0))&" / "&INDEX(Автопарк!$D$6:$D$65,MATCH(F8,Автопарк!$A$6:$A$65,0)),""))'
  $form.Range('F10').Formula='=IF(F8="","",IFERROR(INDEX(Автопарк!$F$6:$F$65,MATCH(F8,Автопарк!$A$6:$A$65,0)),0))'
  $form.Range('F11').Formula='=IF($B$21>0,$B$21,IFERROR(INDEX(Маршрути_Європа!$D$6:$D$65,MATCH($B$8,Маршрути_Європа!$A$6:$A$65,0)),0))'
