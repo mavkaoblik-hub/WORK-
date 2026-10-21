@@ -5,6 +5,7 @@ from pathlib import Path
 from zipfile import ZipFile
 import re
 import sys
+import json
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +13,7 @@ VBA = (ROOT / "vba" / "TransportCenter.bas").read_text(encoding="utf-8-sig")
 INSTALL = (ROOT / "INSTALL.ps1").read_text(encoding="utf-8-sig")
 CATALOG_SCRIPT = (ROOT / "CATALOGS.ps1").read_text(encoding="utf-8-sig")
 CATALOG_VBA = (ROOT / "vba" / "TransportCatalogs.bas").read_text(encoding="utf-8-sig")
+ROUTE_FILE = ROOT / 'data' / 'routes_europe.json'
 
 
 def test_vba():
@@ -78,10 +80,37 @@ def test_install():
     assert '$form.Range(\'F13\').Formula' in CATALOG_SCRIPT
     assert '$form.Range(\'F14\').Formula' in CATALOG_SCRIPT
     assert '$form.Range(\'B8\').Validation.Add(3,1,1,\'=TC_Routes\')' in CATALOG_SCRIPT
+    assert 'Get-Content -LiteralPath $routeDataPath -Raw -Encoding UTF8 | ConvertFrom-Json' in CATALOG_SCRIPT
+    assert 'TC_Routes' in CATALOG_SCRIPT and "$A$6:$A$205" in CATALOG_SCRIPT
+    assert "source_year" in CATALOG_SCRIPT and "source" in CATALOG_SCRIPT
+    assert "Історичний" not in CATALOG_SCRIPT or "Зворотн" in CATALOG_SCRIPT
     assert 'ServerXMLHTTP' not in CATALOG_SCRIPT and 'Invoke-WebRequest' not in CATALOG_SCRIPT
     # Code must not introduce Workbook events which call web network automatically.
     assert not re.search(r"Workbook_Open[\s\S]{0,100}ОновитиЗІнтернету", INSTALL)
 
+
+
+def test_route_catalog():
+    data = json.loads(ROUTE_FILE.read_text(encoding='utf-8-sig'))
+    assert data['schema_version'] == '1.0'
+    routes = data['routes']
+    assert 100 <= len(routes) <= 200, f"Wrong route count: {len(routes)}"
+    codes = [r['id'] for r in routes]
+    assert len(set(codes)) == len(codes), "Duplicate route code"
+    for row in routes:
+        assert isinstance(row['km'], (int, float)) and 0 < row['km'] < 10000, row
+        assert row['from'] and row['to']
+        assert row['source'].startswith("https://"), row
+        assert isinstance(row['source_year'], int) and 2010 <= row['source_year'] <= 2026
+        assert row['kind'] and row['remark']
+        if row['kind'].startswith("Зворотний"):
+            assert "з протилежного" in row['remark'], row
+    indexed = {r['id']: r for r in routes}
+    assert indexed['WAW-BER']['km'] == 594
+    assert indexed['BER-WAW']['km'] == 574  # independently published, not mirrored!
+    assert indexed['KRK-VIE']['km'] == 482
+    assert indexed['LDZ-PAR']['source_year'] == 2018
+    assert sum('Зворотний' in r['kind'] for r in routes) > 40
 
 def validate_xlsx(filename):
     ns = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
@@ -103,6 +132,7 @@ def validate_xlsx(filename):
 if __name__ == "__main__":
     test_vba()
     test_install()
+    test_route_catalog()
     if len(sys.argv) > 1:
         validate_xlsx(sys.argv[1])
         print("OK: static VBA/installer contracts; XLSX archive, XML, sheets and charts.")
