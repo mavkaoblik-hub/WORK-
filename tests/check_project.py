@@ -10,6 +10,8 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).resolve().parents[1]
 VBA = (ROOT / "vba" / "TransportCenter.bas").read_text(encoding="utf-8-sig")
 INSTALL = (ROOT / "INSTALL.ps1").read_text(encoding="utf-8-sig")
+CATALOG_SCRIPT = (ROOT / "CATALOGS.ps1").read_text(encoding="utf-8-sig")
+CATALOG_VBA = (ROOT / "vba" / "TransportCatalogs.bas").read_text(encoding="utf-8-sig")
 
 
 def test_vba():
@@ -26,11 +28,18 @@ def test_vba():
     for forbidden in ("Workbook_Open(", "Workbook_SheetCalculate(", "Worksheet_Calculate(", "Worksheet_Change("):
         assert forbidden not in VBA, "Implicit event-based operation: " + forbidden
     assert "SaveCopyAs" in VBA and "_Резервні_копії" in VBA
-    assert 'sh.Range("B5").Value = fullName' in VBA
-    assert 'sh.Range("E5").Value = vehicle' in VBA
+    assert 'Ws("Картка_водія")' in VBA, "Driver creation should use guided card"
+    assert 'sh.Range("B5").Value = fullName' in CATALOG_VBA
+    assert 'sh.Range("E5").Value = plate' in CATALOG_VBA
+    for name in ("ЗареєструватиВодія", "СинхронізуватиВодіїв", "ВідкритиМаршрути"):
+        assert "Public Sub " + name + "()" in CATALOG_VBA
     assert 'f.Range("B6").Value = Date' in VBA
     assert 'a.Cells(q, 12).Value = "ЗАКРИТО"' in VBA
     assert 'Call BackupNow("before_close")' in VBA
+    assert "a.Cells(q, 15).Value" in VBA, "Route ID must be stored"
+    assert "a.Cells(q, 17).Value" in VBA, "Forecast PLN must be saved as snapshot"
+    assert "a.Cells(q, 18).Value" in VBA, "Actual km must be stored"
+    assert 'Public Function BackupNow' in VBA
 
 
 def test_install():
@@ -56,6 +65,17 @@ def test_install():
     assert "CodeModule.AddFromString" in INSTALL, "Unicode VBA injection missing"
     assert "VBComponents.Import(" not in INSTALL, "ANSI import would damage Ukrainian names"
     assert "PDF-звіт" in INSTALL and "Відновити копію" in INSTALL
+    assert 'Initialize-TCCatalogs $book $form' in INSTALL
+    assert 'TransportCatalogs.bas' in INSTALL
+    for sheet_name in ('Автопарк','Контакти_водіїв','Маршрути_Європа','Картка_водія'):
+        assert sheet_name in CATALOG_SCRIPT
+    assert '$routes.Range(\'G6\').Formula' in CATALOG_SCRIPT
+    assert 'COUNTIF(Нарахування!$O$13:$O$132,A6)' in CATALOG_SCRIPT
+    assert 'SUMIF(Нарахування!$O$13:$O$132,A6,Нарахування!$R$13:$R$132)' in CATALOG_SCRIPT
+    assert '$form.Range(\'F13\').Formula' in CATALOG_SCRIPT
+    assert '$form.Range(\'F14\').Formula' in CATALOG_SCRIPT
+    assert '$form.Range(\'B8\').Validation.Add(3,1,1,\'=TC_Routes\')' in CATALOG_SCRIPT
+    assert 'ServerXMLHTTP' not in CATALOG_SCRIPT and 'Invoke-WebRequest' not in CATALOG_SCRIPT
     # Code must not introduce Workbook events which call web network automatically.
     assert not re.search(r"Workbook_Open[\s\S]{0,100}ОновитиЗІнтернету", INSTALL)
 
