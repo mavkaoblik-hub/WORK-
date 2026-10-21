@@ -94,17 +94,17 @@ try {
   $catalogComp = $book.VBProject.VBComponents.Add(1)
   $catalogComp.Name = 'TransportCatalogs'
   $catalogComp.CodeModule.AddFromString($catalogVbaText)
-  function Add-TcButton($sheet, [string]$caption, [string]$macro, [int]$x, [int]$y) {
+  function Add-TcButton($sheet, [string]$caption, [string]$macro, [int]$x, [int]$y, [string]$module = 'TransportCenter') {
     $shape = $sheet.Shapes.AddShape(5,$x,$y,173,33)
     $shape.TextFrame.Characters().Text = $caption
     $shape.TextFrame.Characters().Font.Name = 'Times New Roman'
     $shape.TextFrame.Characters().Font.Size = 12
-    $shape.OnAction = "'" + $Destination + "'!TransportCenter." + $macro
+    $shape.OnAction = "'" + $Destination + "'!" + $module + "." + $macro
   }
   Add-TcButton $form 'Зберегти рейс' 'ЗберегтиДані' 440 140
   Add-TcButton $form 'На головну' 'ПерейтиДоЗвітів' 440 183
-  Add-TcButton $book.Worksheets.Item('Картка_водія') 'Зареєструвати водія' 'ЗареєструватиВодія' 430 125
-  Add-TcButton $book.Worksheets.Item('Контакти_водіїв') 'Оновити картки' 'СинхронізуватиВодіїв' 900 100
+  Add-TcButton $book.Worksheets.Item('Картка_водія') 'Зареєструвати водія' 'ЗареєструватиВодія' 430 125 'TransportCatalogs'
+  Add-TcButton $book.Worksheets.Item('Контакти_водіїв') 'Оновити картки' 'СинхронізуватиВодіїв' 900 100 'TransportCatalogs'
   $contents = $book.Worksheets.Item('Зміст')
   Add-TcButton $contents 'Заповнити дані' 'ЗаповнитиДані' 620 40
   Add-TcButton $contents 'Додати водія' 'ДодатиВодія' 620 83
@@ -114,9 +114,9 @@ try {
   Add-TcButton $contents 'Закрити рейс' 'ЗакритиРейс' 620 255
   Add-TcButton $contents 'PDF-звіт' 'СформуватиЗвіт' 620 298
   Add-TcButton $contents 'Відновити копію' 'ВідновитиРезервнуКопію' 620 341
-  Add-TcButton $contents 'Автопарк' 'ВідкритиАвтопарк' 830 40
-  Add-TcButton $contents 'Контакти водіїв' 'ВідкритиКонтакти' 830 83
-  Add-TcButton $contents 'Маршрути Європи' 'ВідкритиМаршрути' 830 126
+  Add-TcButton $contents 'Автопарк' 'ВідкритиАвтопарк' 830 40 'TransportCatalogs'
+  Add-TcButton $contents 'Контакти водіїв' 'ВідкритиКонтакти' 830 83 'TransportCatalogs'
+  Add-TcButton $contents 'Маршрути Європи' 'ВідкритиМаршрути' 830 126 'TransportCatalogs'
   Add-TcButton $contents 'Картка водія' 'ДодатиВодія' 830 169
   # Keep the content index physically FIRST as required.
   if ($book.Worksheets.Item(1).Name -ne 'Зміст') { $contents.Move($book.Worksheets.Item(1)) }
