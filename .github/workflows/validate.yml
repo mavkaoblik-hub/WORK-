@@ -65,14 +65,15 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $scriptText=[System.IO.File]::ReadAllText((Resolve-Path 'deployment/offline-v10.2/INSTALL_OFFLINE.ps1').Path,[Text.Encoding]::UTF8)
           if ($scriptText.Contains('$designer.Width=') -or $scriptText.Contains('$designer.Height=')) { throw 'Direct Designer.Width/Height regression' }
-          foreach($required in @(
-             "$" + "uiComponent.Properties.Item('Width').Value=710",
-             "$" + "uiComponent.Properties.Item('Height').Value=575",
-             "$" + "probeForm.Properties.Item('Width').Value = 210",
-             "$" + "probeControl.Move([single]12",
-             "$" + "book.SaveAs($" + "target,52)",
-             "$" + "book.Close($" + "false)"
-          )) {
+          $needles = @(
+            '$uiComponent.Properties.Item(''Width'').Value=710'
+            '$uiComponent.Properties.Item(''Height'').Value=575'
+            '$probeForm.Properties.Item(''Width'').Value = 210'
+            '$probeControl.Move([single]12'
+            '$book.SaveAs($target,52)'
+            '$book.Close($false)'
+          )
+          foreach($required in $needles) {
              if(-not $scriptText.Contains($required)) { throw ('Missing essential build operation: '+$required) }
           }
           Write-Host 'MSForms designer property path and v9 SaveAs/Close contract OK'
