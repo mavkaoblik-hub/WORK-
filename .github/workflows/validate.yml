@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
+          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
@@ -41,4 +41,7 @@ jobs:
             }
             Write-Host ("PowerShell grammar OK: " + $path)
           }
+      - name: Test invariant Excel numeric formula conversion (PowerShell 5.1)
+        shell: powershell
+        run: .\\deployment\\offline-v7-numeric-com-test.ps1
 # Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
