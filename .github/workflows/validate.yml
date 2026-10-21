@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','deployment/offline-v10.3/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
+          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','deployment/offline-v10.3/INSTALL_OFFLINE.ps1','deployment/offline-v10.4/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
@@ -92,4 +92,18 @@ jobs:
           if($vb.Contains('f.cboDriver.')) { throw 'Unsupported late-bound control access regression' }
           if($scriptText.Contains('  Button $index ')) { throw 'Old unanchored dashboard control regression' }
           Write-Host 'Dashboard anchors and modal controls consistent'
+      - name: Check v10.4 KPI card sizing and deferred MSForms initialization
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer=[IO.File]::ReadAllText((Resolve-Path 'deployment/offline-v10.4/INSTALL_OFFLINE.ps1').Path,[Text.Encoding]::UTF8)
+          $app=[IO.File]::ReadAllText((Resolve-Path 'deployment/offline-v10.4/TransportApp.bas').Path,[Text.Encoding]::UTF8)
+          foreach($required in @('B8:D9','F8:H9','J8:L9','N8:P9','B12:D13','F12:H13','J12:L13','N12:P13','HorizontalAlignment=-4108','UserForm_Activate()','Private mInitialized As Boolean','If mInitialized Then Exit Sub','TC_FormInit Me')) {
+            if(-not $installer.Contains($required)) {throw ('v10.4 layout/form regression: '+$required)}
+          }
+          if($installer.Contains('Private Sub UserForm_Initialize()')) {throw 'Old premature UserForm Initialize handler'}
+          foreach($required in @('Set driverList = f.Controls.Item(','driverList.AddItem caption','driverLastRow =','If ws Is Nothing Then','initStage =')) {
+            if(-not $app.Contains($required)) {throw ('v10.4 driver list regression: '+$required)}
+          }
+          Write-Host 'v10.4 KPI layout and deferred form lifecycle checks passed'
 # Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
