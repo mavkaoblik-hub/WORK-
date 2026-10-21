@@ -21,3 +21,24 @@ jobs:
 # This workflow deliberately does not execute VBA or Excel.
 # Full Excel COM tests require a separately provisioned Windows runner
 # with a licensed Microsoft Excel installation.
+
+  powershell-parse:
+    runs-on: windows-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse Windows installer and restore scripts
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($path in @('INSTALL.ps1','RESTORE_BACKUP.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error ("$path : " + $_.Message) }
+              exit 1
+            }
+            Write-Host ("PowerShell grammar OK: " + $path)
+          }
+# Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
