@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
+          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','deployment/offline-v10.3/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
@@ -77,4 +77,19 @@ jobs:
              if(-not $scriptText.Contains($required)) { throw ('Missing essential build operation: '+$required) }
           }
           Write-Host 'MSForms designer property path and v9 SaveAs/Close contract OK'
+      - name: Check v10.3 dashboard anchors and modal controls
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $scriptText=[IO.File]::ReadAllText((Resolve-Path 'deployment/offline-v10.3/INSTALL_OFFLINE.ps1').Path,[Text.Encoding]::UTF8)
+          $vb=[IO.File]::ReadAllText((Resolve-Path 'deployment/offline-v10.3/TransportApp.bas').Path,[Text.Encoding]::UTF8)
+          foreach($required in @('DashboardButton $index','B17','F17','J17','N17','B22','F22','J22','N22','B27','F27','J27','N27')) {
+            if(-not $scriptText.Contains($required)) { throw ('Missing anchored dashboard item: '+$required) }
+          }
+          foreach($required in @('f.Controls("cboDriver")','f.Controls("cmdSave")','initStage = "Завантаження водіїв"','ApplyFormMode f')) {
+            if(-not $vb.Contains($required)) { throw ('Missing VBA safety operation: '+$required) }
+          }
+          if($vb.Contains('f.cboDriver.')) { throw 'Unsupported late-bound control access regression' }
+          if($scriptText.Contains("Button $"+'index '+ "'Створити рейс' 'TC_UI_NewTrip' 90 353")) { throw 'Old overlapping button still present' }
+          Write-Host 'Dashboard anchors and modal controls consistent'
 # Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
