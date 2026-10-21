@@ -15,7 +15,8 @@ INSTALL = (ROOT / "INSTALL.ps1").read_text(encoding="utf-8-sig")
 def test_vba():
     names = [
         "ЗаповнитиДані", "ЗберегтиДані", "ДодатиВодія", "ПерейтиДоЗвітів",
-        "РезервнаКопія", "ЗакритиРейс", "ОновитиЗІнтернету"
+        "РезервнаКопія", "ЗакритиРейс", "ОновитиЗІнтернету",
+        "СформуватиЗвіт", "ВідновитиРезервнуКопію"
     ]
     for name in names:
         assert len(re.findall(r"Public Sub\s+" + name + r"\s*\(\)", VBA)) == 1, name
@@ -52,6 +53,9 @@ def test_install():
     assert "$excel.Calculation = -4105" in INSTALL
     assert "Зміст" in INSTALL and "Worksheets.Item(1)" in INSTALL
     assert "Транспортний_центр.xlsm" in INSTALL
+    assert "CodeModule.AddFromString" in INSTALL, "Unicode VBA injection missing"
+    assert "VBComponents.Import(" not in INSTALL, "ANSI import would damage Ukrainian names"
+    assert "PDF-звіт" in INSTALL and "Відновити копію" in INSTALL
     # Code must not introduce Workbook events which call web network automatically.
     assert not re.search(r"Workbook_Open[\s\S]{0,100}ОновитиЗІнтернету", INSTALL)
 
