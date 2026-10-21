@@ -7,7 +7,7 @@ Private Function Ws(ByVal nm As String) As Worksheet
     Set Ws = ThisWorkbook.Worksheets(nm)
 End Function
 
-Private Function BackupNow(ByVal label As String) As String
+Public Function BackupNow(ByVal label As String) As String
     Dim dirName As String, pathName As String
     If Len(ThisWorkbook.Path) = 0 Then Err.Raise 1001, , "Спочатку збережіть книгу."
     dirName = ThisWorkbook.Path & Application.PathSeparator & BACKUP_FOLDER
@@ -30,7 +30,7 @@ Public Sub ЗаповнитиДані()
     On Error GoTo failed
     Dim f As Worksheet
     Set f = Ws(FORM_NAME)
-    f.Range("B5:B18").ClearContents
+    f.Range("B5:B22").ClearContents
     f.Range("B6").Value = Date
     f.Range("B9").Value = Date
     f.Range("B10").Value = Date
@@ -38,6 +38,7 @@ Public Sub ЗаповнитиДані()
     f.Range("B15").Value = 0
     f.Range("B16").Value = 0
     f.Range("B18").Value = 0
+    f.Range("B22").Value = 0.1
     f.Activate
     f.Range("B5").Select
     Exit Sub
@@ -56,6 +57,24 @@ Public Sub ЗберегтиДані()
     If Not IsDate(f.Range("B6").Value) Or Not IsDate(f.Range("B9").Value) Or Not IsDate(f.Range("B10").Value) Then Err.Raise 1003, , "Перевірте дати."
     If CDate(f.Range("B10").Value) < CDate(f.Range("B9").Value) Then Err.Raise 1004, , "Дата прибуття раніше виїзду."
     If Trim$(CStr(f.Range("B7").Value)) = "" Or Trim$(CStr(f.Range("B8").Value)) = "" Then Err.Raise 1005, , "Вкажіть клієнта та маршрут."
+    If Application.CountIf(Ws("Маршрути_Європа").Range("A6:A65"), Trim$(CStr(f.Range("B8").Value))) <> 1 Then _
+        Err.Raise 1012, , "Оберіть маршрут із довідника (або створіть його в «Маршрути_Європа»)."
+    If Trim$(CStr(f.Range("B19").Value)) <> "" Then
+        If Application.CountIf(Ws("Автопарк").Range("A6:A65"), Trim$(CStr(f.Range("B19").Value))) <> 1 Then _
+            Err.Raise 1013, , "Оберіть автомобіль із довідника."
+    End If
+    If Len(Trim$(CStr(f.Range("B20").Value))) > 0 Then
+        If Not IsNumeric(f.Range("B20").Value) Or CDbl(f.Range("B20").Value) <= 0 Then _
+            Err.Raise 1014, , "Ціна пального повинна бути більшою за нуль."
+    End If
+    If Len(Trim$(CStr(f.Range("B21").Value))) > 0 Then
+        If Not IsNumeric(f.Range("B21").Value) Or CDbl(f.Range("B21").Value) <= 0 Then _
+            Err.Raise 1015, , "Планова відстань повинна бути більшою за нуль."
+    End If
+    If Not IsNumeric(f.Range("B22").Value) Then Err.Raise 1016, , "Резерв пального повинен бути числом."
+    If CDbl(f.Range("B22").Value) < 0 Or CDbl(f.Range("B22").Value) > 1 Then _
+        Err.Raise 1017, , "Резерв від 0 до 100%."
+
     If Not IsNumeric(f.Range("B11").Value) Or Not IsNumeric(f.Range("B12").Value) Then Err.Raise 1006, , "Перевірте одометр."
     If CDbl(f.Range("B12").Value) < CDbl(f.Range("B11").Value) Then Err.Raise 1007, , "Кінцевий одометр менший за початковий."
     If Not IsNumeric(f.Range("B13").Value) Or Not IsNumeric(f.Range("B14").Value) Then Err.Raise 1008, , "Вкажіть дохід та оплату."
@@ -76,7 +95,8 @@ Public Sub ЗберегтиДані()
     d.Cells(r, 1).Value = tripID
     d.Cells(r, 2).Value = CDate(f.Range("B9").Value)
     d.Cells(r, 3).Value = CDate(f.Range("B10").Value)
-    d.Cells(r, 4).Value = f.Range("B8").Value
+    d.Cells(r, 4).Value = f.Range("F18").Value
+    If Trim$(CStr(d.Cells(r, 4).Value)) = "" Then d.Cells(r, 4).Value = f.Range("B8").Value
     d.Cells(r, 5).Value = CDbl(f.Range("B11").Value)
     d.Cells(r, 6).Value = CDbl(f.Range("B12").Value)
     If IsNumeric(f.Range("B15").Value) Then d.Cells(r, 8).Value = CDbl(f.Range("B15").Value)
@@ -89,6 +109,22 @@ Public Sub ЗберегтиДані()
     a.Cells(q, 6).Value = CDbl(f.Range("B14").Value)
     a.Cells(q, 11).Value = f.Range("B17").Value
     If IsNumeric(f.Range("B18").Value) Then d.Cells(r, 10).Value = CDbl(f.Range("B18").Value)
+    ' Snapshot: forecast must not change retroactively when fuel prices are updated.
+    a.Cells(q, 15).Value = Trim$(CStr(f.Range("B8").Value))
+    a.Cells(q, 16).Value = Trim$(CStr(f.Range("F8").Value))
+    a.Cells(q, 18).Value = CDbl(f.Range("B12").Value) - CDbl(f.Range("B11").Value)
+    If IsNumeric(f.Range("F14").Value) Then
+        If Len(CStr(f.Range("F14").Value)) > 0 Then a.Cells(q, 17).Value = CDbl(f.Range("F14").Value)
+    End If
+    If IsNumeric(f.Range("F13").Value) Then
+        If Len(CStr(f.Range("F13").Value)) > 0 Then a.Cells(q, 19).Value = CDbl(f.Range("F13").Value)
+    End If
+    If IsNumeric(f.Range("F12").Value) Then
+        If CDbl(f.Range("F12").Value) > 0 Then a.Cells(q, 20).Value = CDbl(f.Range("F12").Value)
+    End If
+    If IsNumeric(f.Range("F11").Value) Then
+        If CDbl(f.Range("F11").Value) > 0 Then a.Cells(q, 21).Value = CDbl(f.Range("F11").Value)
+    End If
     Ws("Журнал_операцій").Cells(Ws("Журнал_операцій").Rows.Count, 1).End(xlUp).Offset(1, 0).Resize(1, 4).Value = Array(Now, Environ$("USERNAME"), "CREATE_TRIP", tripID)
     Application.EnableEvents = oldEvents
     Application.Calculate
@@ -105,31 +141,11 @@ End Sub
 
 Public Sub ДодатиВодія()
     On Error GoTo failed
-    Dim nm As String, fullName As String, vehicle As String, sh As Worksheet, rg As Worksheet, r As Long
-    nm = Trim$(InputBox("Ім'я вкладки (наприклад Водій_03):", "Новий водій"))
-    If Len(nm) = 0 Then Exit Sub
-    If Len(nm) > 31 Or InStr(nm, "/") Or InStr(nm, "\\") Or InStr(nm, "[") Or InStr(nm, "]") Or InStr(nm, "*") Or InStr(nm, "?") Or InStr(nm, ":") Then Err.Raise 1101, , "Недопустима назва."
-    On Error Resume Next
-    Set sh = Ws(nm)
-    On Error GoTo failed
-    If Not sh Is Nothing Then Err.Raise 1102, , "Така вкладка вже є."
-    Set rg = Ws("Реєстр_водіїв")
-    For r = 13 To 52
-        If Trim$(CStr(rg.Cells(r, 1).Value)) = "" Then Exit For
-    Next r
-    If r > 52 Then Err.Raise 1103, , "Реєстр заповнений."
-    fullName = InputBox("ПІБ водія:", "Новий водій")
-    vehicle = InputBox("Автомобіль:", "Новий водій")
-    If Len(Trim$(fullName)) = 0 Then Exit Sub
-    If MsgBox("Створити " & nm & "?", vbYesNo + vbQuestion) <> vbYes Then Exit Sub
-    Call BackupNow("before_driver")
-    Ws("ШАБЛОН_ВОДІЯ").Copy Before:=Ws("КІНЕЦЬ_ВОДІЇВ")
-    Set sh = ActiveSheet: sh.Name = nm
-    sh.Range("B5").Value = fullName
-    sh.Range("E5").Value = vehicle
-    rg.Cells(r, 1).Value = nm  ' B/C contain existing INDIRECT formulas; preserve them
-    ThisWorkbook.Save
-    MsgBox "Водія додано. Реєстр і зміст оновляться формулами.", vbInformation
+    With Ws("Картка_водія")
+        .Range("B5:B10").ClearContents
+        .Activate
+        .Range("B5").Select
+    End With
     Exit Sub
 failed:
     MsgBox Err.Description, vbExclamation
