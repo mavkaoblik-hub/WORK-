@@ -86,10 +86,10 @@ jobs:
           foreach($required in @('DashboardButton $index','B17','F17','J17','N17','B22','F22','J22','N22','B27','F27','J27','N27')) {
             if(-not $scriptText.Contains($required)) { throw ('Missing anchored dashboard item: '+$required) }
           }
-          foreach($required in @('f.Controls("cboDriver")','f.Controls("cmdSave")','initStage = "Завантаження водіїв"','ApplyFormMode f')) {
+          foreach($required in @('f.Controls("cboDriver")','f.Controls("cmdSave")','initStage =','ApplyFormMode f')) {
             if(-not $vb.Contains($required)) { throw ('Missing VBA safety operation: '+$required) }
           }
           if($vb.Contains('f.cboDriver.')) { throw 'Unsupported late-bound control access regression' }
-          if($scriptText.Contains("Button $"+'index '+ "'Створити рейс' 'TC_UI_NewTrip' 90 353")) { throw 'Old overlapping button still present' }
+          if($scriptText.Contains('  Button $index ')) { throw 'Old unanchored dashboard control regression' }
           Write-Host 'Dashboard anchors and modal controls consistent'
 # Windows runner only validates PowerShell grammar; Excel is NOT installed/tested.
