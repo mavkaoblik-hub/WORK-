@@ -14,6 +14,11 @@ if (!( [int]::TryParse($choice,[ref]$index)) -or $index -lt 1 -or $index -gt $it
 $confirm=Read-Host ("ВІДНОВИТИ " + $items[$index-1].Name + "? Введіть ТАК")
 if ($confirm -cne 'ТАК') { Write-Host 'Скасовано'; exit }
 if(Test-Path -LiteralPath $target) {
+  # Exclusive handle check: do not overwrite a book currently opened by Excel.
+  $handle = $null
+  try { $handle = [System.IO.File]::Open($target, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) }
+  catch { throw "Закрийте Excel і повторіть відновлення. Робочий файл зараз зайнятий." }
+  finally { if ($null -ne $handle) { $handle.Dispose() } }
   $before=Join-Path $folder ("before_restore_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".xlsm")
   Copy-Item -LiteralPath $target -Destination $before -ErrorAction Stop
   Write-Host "Поточну версію збережено: $before"
