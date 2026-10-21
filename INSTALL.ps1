@@ -47,7 +47,7 @@ try {
   $form.Range('A1:B19').Font.Name = 'Times New Roman'
   $form.Range('A1:B19').Font.Size = 14
   $form.Range('B5:B18').Interior.Color = 15136253
-  $book.Names.Add('TC_Drivers', '=\'Реєстр_водіїв\'!$A$13:$A$52') | Out-Null
+  $book.Names.Add('TC_Drivers', '=Реєстр_водіїв!$A$13:$A$52') | Out-Null
   $form.Range('B5').Validation.Delete()
   $form.Range('B5').Validation.Add(3,1,1,'=TC_Drivers') # Excel drop-down: registered drivers
   $form.Range('D5').Value2 = 'Веб-дані оновлюються ТІЛЬКИ окремою кнопкою.'
