@@ -86,7 +86,8 @@ Public Sub ЗберегтиДані()
     Ws("Журнал_операцій").Cells(Ws("Журнал_операцій").Rows.Count, 1).End(xlUp).Offset(1, 0).Resize(1, 4).Value = Array(Now, Environ$("USERNAME"), "CREATE_TRIP", tripID)
     Application.EnableEvents = oldEvents
     Application.Calculate
-    MsgBox "Рейс внесено: " & tripID, vbInformation
+    ThisWorkbook.Save
+    MsgBox "Рейс внесено й збережено: " & tripID, vbInformation
     Exit Sub
 rollback:
     Application.EnableEvents = oldEvents
@@ -120,9 +121,8 @@ Public Sub ДодатиВодія()
     Set sh = ActiveSheet: sh.Name = nm
     sh.Range("B5").Value = fullName
     sh.Range("E5").Value = vehicle
-    rg.Cells(r, 1).Value = nm
-    rg.Cells(r, 2).Value = fullName
-    rg.Cells(r, 3).Value = vehicle
+    rg.Cells(r, 1).Value = nm  ' B/C contain existing INDIRECT formulas; preserve them
+    ThisWorkbook.Save
     MsgBox "Водія додано. Реєстр і зміст оновляться формулами.", vbInformation
     Exit Sub
 failed:
@@ -161,6 +161,7 @@ Public Sub ЗакритиРейс()
     With Ws("Журнал_операцій")
         .Cells(.Rows.Count, 1).End(xlUp).Offset(1, 0).Resize(1, 4).Value = Array(Now, Environ$("USERNAME"), "CLOSE_TRIP", id)
     End With
+    ThisWorkbook.Save
     MsgBox "Рейс закрито. Резервну копію збережено.", vbInformation
     Exit Sub
 failed:
@@ -248,6 +249,7 @@ Public Sub ОновитиЗІнтернету()
     Ws("NBP_дані").Range("B7").Value = stamp
     Ws("Налаштування").Range("B15").Value = "NBP вручну: " & Format(Now, "dd.mm.yyyy hh:nn")
     Ws("Налаштування").Calculate
+    ThisWorkbook.Save
     MsgBox "Курс " & Format(rate, "0.0000") & " PLN/USD, дата " & stamp & vbCrLf & _
         "Паркінги не оновлювалися.", vbInformation
     Exit Sub
