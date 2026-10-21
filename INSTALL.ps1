@@ -7,8 +7,13 @@ $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sourcePath = Join-Path $dir $Source
 $destinationPath = Join-Path $dir $Destination
 $modulePath = Join-Path $dir 'vba\TransportCenter.bas'
+$catalogModulePath = Join-Path $dir 'vba\TransportCatalogs.bas'
+$catalogScriptPath = Join-Path $dir 'CATALOGS.ps1'
 if (!(Test-Path -LiteralPath $sourcePath)) { throw "Не знайдено вихідний XLSX: $sourcePath" }
 if (!(Test-Path -LiteralPath $modulePath)) { throw "Не знайдено VBA-модуль: $modulePath" }
+if (!(Test-Path -LiteralPath $catalogModulePath)) { throw "Не знайдено VBA-модуль: $catalogModulePath" }
+if (!(Test-Path -LiteralPath $catalogScriptPath)) { throw "Не знайдено каталогізатор: $catalogScriptPath" }
+. $catalogScriptPath
 if (Test-Path -LiteralPath $destinationPath) { throw "Файл $Destination вже існує. Перейменуйте його або збережіть окремо. Перезапис заборонено." }
 $excel = $null; $book = $null
 try {
@@ -64,6 +69,7 @@ try {
   $book.Names.Add('TC_Drivers', '=Реєстр_водіїв!$A$13:$A$52') | Out-Null
   $form.Range('B5').Validation.Delete()
   $form.Range('B5').Validation.Add(3,1,1,'=TC_Drivers') # Excel drop-down: registered drivers
+  Initialize-TCCatalogs $book $form
   $form.Range('D5').Value2 = 'Веб-дані оновлюються ТІЛЬКИ окремою кнопкою.'
   $form.Range('D5').Font.Bold = $true
   $form.Columns.Item('D').ColumnWidth = 60
@@ -83,6 +89,11 @@ try {
   $vbcomp = $book.VBProject.VBComponents.Add(1) # vbext_ct_StdModule
   $vbcomp.Name = 'TransportCenter'
   $vbcomp.CodeModule.AddFromString($vbaText)
+  $catalogVbaText = [System.IO.File]::ReadAllText($catalogModulePath, [System.Text.Encoding]::UTF8)
+  $catalogVbaText = $catalogVbaText -replace '(?m)^Attribute VB_Name = "[^"]*"\r?\n', ''
+  $catalogComp = $book.VBProject.VBComponents.Add(1)
+  $catalogComp.Name = 'TransportCatalogs'
+  $catalogComp.CodeModule.AddFromString($catalogVbaText)
   function Add-TcButton($sheet, [string]$caption, [string]$macro, [int]$x, [int]$y) {
     $shape = $sheet.Shapes.AddShape(5,$x,$y,173,33)
     $shape.TextFrame.Characters().Text = $caption
@@ -92,6 +103,8 @@ try {
   }
   Add-TcButton $form 'Зберегти рейс' 'ЗберегтиДані' 440 140
   Add-TcButton $form 'На головну' 'ПерейтиДоЗвітів' 440 183
+  Add-TcButton $book.Worksheets.Item('Картка_водія') 'Зареєструвати водія' 'ЗареєструватиВодія' 430 125
+  Add-TcButton $book.Worksheets.Item('Контакти_водіїв') 'Оновити картки' 'СинхронізуватиВодіїв' 900 100
   $contents = $book.Worksheets.Item('Зміст')
   Add-TcButton $contents 'Заповнити дані' 'ЗаповнитиДані' 620 40
   Add-TcButton $contents 'Додати водія' 'ДодатиВодія' 620 83
@@ -101,6 +114,10 @@ try {
   Add-TcButton $contents 'Закрити рейс' 'ЗакритиРейс' 620 255
   Add-TcButton $contents 'PDF-звіт' 'СформуватиЗвіт' 620 298
   Add-TcButton $contents 'Відновити копію' 'ВідновитиРезервнуКопію' 620 341
+  Add-TcButton $contents 'Автопарк' 'ВідкритиАвтопарк' 830 40
+  Add-TcButton $contents 'Контакти водіїв' 'ВідкритиКонтакти' 830 83
+  Add-TcButton $contents 'Маршрути Європи' 'ВідкритиМаршрути' 830 126
+  Add-TcButton $contents 'Картка водія' 'ДодатиВодія' 830 169
   # Keep the content index physically FIRST as required.
   if ($book.Worksheets.Item(1).Name -ne 'Зміст') { $contents.Move($book.Worksheets.Item(1)) }
   $excel.Calculation = -4105 # xlCalculationAutomatic: arithmetic works; web formulas are removed
