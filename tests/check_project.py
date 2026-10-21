@@ -37,6 +37,7 @@ def test_vba():
     assert 'a.Cells(q, 12).Value = "ЗАКРИТО"' in VBA
     assert 'Call BackupNow("before_close")' in VBA
     assert "a.Cells(q, 15).Value" in VBA, "Route ID must be stored"
+    assert 'Application.Match(driverDisplay, directory.Range("H6:H65"), 0)' in VBA
     assert "a.Cells(q, 17).Value" in VBA, "Forecast PLN must be saved as snapshot"
     assert "a.Cells(q, 18).Value" in VBA, "Actual km must be stored"
     assert 'Public Function BackupNow' in VBA
@@ -55,7 +56,7 @@ def test_install():
         "$sheet.Range('B7').Value2 = ''", "$sheet.Range('B8').Value2 = ''",
         "$rates.Range('G13:H52').ClearContents()",
         "=Реєстр_водіїв!$A$13:$A$52",
-        "$form.Range('B5').Validation.Add(3,1,1,'=TC_Drivers')",
+        "$form.Range('B5').Validation.Add(3,1,1,'=TC_DriverDisplay')",
         "$book.SaveAs($destinationPath, 52)",
     ):
         assert token in INSTALL, token
@@ -70,6 +71,8 @@ def test_install():
     for sheet_name in ('Автопарк','Контакти_водіїв','Маршрути_Європа','Картка_водія'):
         assert sheet_name in CATALOG_SCRIPT
     assert '$routes.Range(\'G6\').Formula' in CATALOG_SCRIPT
+    assert 'TC_DriverDisplay' in CATALOG_SCRIPT
+    assert 'ЗАКРИТО' in CATALOG_SCRIPT
     assert 'COUNTIF(Нарахування!$O$13:$O$132,A6)' in CATALOG_SCRIPT
     assert 'SUMIF(Нарахування!$O$13:$O$132,A6,Нарахування!$R$13:$R$132)' in CATALOG_SCRIPT
     assert '$form.Range(\'F13\').Formula' in CATALOG_SCRIPT
