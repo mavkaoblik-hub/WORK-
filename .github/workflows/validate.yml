@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
+          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
