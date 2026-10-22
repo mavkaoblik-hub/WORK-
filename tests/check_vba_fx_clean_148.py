@@ -5,7 +5,7 @@ import re
 source = Path("deployment/demo-v10.14/TransportStatusFX.bas").read_text(encoding="utf-8-sig")
 vba_files = [
     Path("deployment/demo-v10.14/TransportStatusFX.bas"),
-    Path("deployment/demo-v10.14/TransportInsights.bas"),
+    Path("deployment/demo-v10.13/TransportInsights.bas"),
     Path("deployment/offline-v10.9/TransportApp.bas"),
     Path("vba/TransportCenter.bas"),
 ]
