@@ -830,29 +830,27 @@ Public Sub TC_RefreshBoth()
     TableLabels history, detailStart + 1, Array("Рейс ID", "Дата витрати", "Категорія", "Паркінг", "Сума", "Валюта", "Курс зафіксовано", "USD у журналі", "", "", "", "Коментар")
     refreshStage = "16 / detailed expense archive"
     detailLine = detailStart + 2
-    For er = ROW0 To Last(expenses, 2)
-        id = S(expenses.Cells(er, 2).Value2)
-        If id <> "" Then
-            If stateOf.Exists(id) Then
-                If CStr(stateOf(id)) = "Завершено" Then
-                    category = S(expenses.Cells(er, 3).Value2)
-                    If category = "" Then category = "Інші"
-                    AddMoney byCategoryFinished, category, N(expenses.Cells(er, 8).Value2)
-                    history.Cells(detailLine, 1).Value = id
-                    history.Cells(detailLine, 2).Value = expenses.Cells(er, 9).Value
-                    history.Cells(detailLine, 3).Value = expenses.Cells(er, 3).Value2
-                    history.Cells(detailLine, 4).Value = expenses.Cells(er, 4).Value2
-                    history.Cells(detailLine, 5).Value = expenses.Cells(er, 5).Value2
-                    history.Cells(detailLine, 6).Value = expenses.Cells(er, 6).Value2
-                    history.Cells(detailLine, 7).Value = expenses.Cells(er, 7).Value2
-                    history.Cells(detailLine, 8).Value = expenses.Cells(er, 8).Value2
-                    history.Cells(detailLine, 12).Value = expenses.Cells(er, 10).Value2
-                    Stripe history, detailLine
-                    detailLine = detailLine + 1
-                End If
-            End If
-        End If
-    Next er
+    ' One Range.Value2 write replaces per-cell COM writes for every receipt.
+    If costRowCount > 0 Then
+        ReDim detailValues(1 To costRowCount, 1 To 12)
+        For er = 1 To costRowCount
+            For colIndex = 1 To 12
+                detailValues(er, colIndex) = detailBuffer(er, colIndex)
+            Next colIndex
+        Next er
+        Set detailRegion = history.Range(history.Cells(detailLine, 1), history.Cells(detailLine + costRowCount - 1, 12))
+        detailRegion.Value2 = detailValues
+        detailRegion.RowHeight = 28
+        detailRegion.Interior.Color = RGB(250, 251, 250)
+        On Error Resume Next
+        detailRegion.FormatConditions.Delete
+        With detailRegion.FormatConditions.Add(Type:=xlExpression, Formula1:="=MOD(ROW(),2)=0")
+            .Interior.Color = RGB(234, 243, 238)
+        End With
+        Err.Clear
+        On Error GoTo Failed
+        detailLine = detailLine + costRowCount
+    End If
     ' Financial summary ends the archive AFTER all transaction records AND category subtotals.
     refreshStage = "17 / archive categories"
     categoriesEnd = CategoryTotalsTable(history, Application.Max(detailLine + 2, detailStart + 4), _
@@ -883,13 +881,15 @@ Public Sub TC_RefreshBoth()
     live.Range("E" & (tripSectionRow + 3) & ":E" & Application.Max(activeLine, tripSectionRow + 3)).NumberFormat = "dd.mm.yyyy"
     history.Range("E" & (tripSectionRow + 3) & ":F" & Application.Max(archiveLine, tripSectionRow + 3)).NumberFormat = "dd.mm.yyyy"
     If detailLine > detailStart + 2 Then history.Range("B" & (detailStart + 2) & ":B" & (detailLine - 1)).NumberFormat = "dd.mm.yyyy"
-    live.Columns("L").WrapText = True
-    history.Columns("L").WrapText = True
+    live.Range("L11:L" & Application.Max(activeLine, liveTotalsAt + 25)).WrapText = True
+    history.Range("L11:L" & Application.Max(detailLine, archiveFinanceEnd + 5)).WrapText = True
     live.PageSetup.Orientation = xlLandscape
     history.PageSetup.Orientation = xlLandscape
     live.PageSetup.Zoom = False: live.PageSetup.FitToPagesWide = 1
     history.PageSetup.Zoom = False: history.PageSetup.FitToPagesWide = 1
     On Error GoTo Failed
+    Application.ScreenUpdating = oldUpdating
+    Application.EnableEvents = oldEvents
     Exit Sub
 Failed:
     ' Preserve original error stage and number; the previous handler hid the cause.
@@ -904,14 +904,27 @@ Failed:
     ThisWorkbook.Worksheets("Поточний стан").Range("N1").Value = errorText
     ThisWorkbook.Worksheets("Архів рейсів").Range("N1").Value = errorText
     On Error GoTo 0
+    If viewPrepared Then
+        Application.ScreenUpdating = oldUpdating
+        Application.EnableEvents = oldEvents
+    End If
     Err.Raise vbObjectError + 3301, "TransportStatusFX.TC_RefreshBoth", errorText
+End Sub
+
+Private Sub PrepareReadableView(ByVal ws As Worksheet)
+    On Error Resume Next
+    ws.Activate
+    ActiveWindow.DisplayGridlines = False
+    ActiveWindow.Zoom = 90
+    ActiveWindow.ScrollRow = 1
+    ActiveWindow.ScrollColumn = 1
+    On Error GoTo 0
 End Sub
 
 Public Sub TC_ShowLive()
     On Error GoTo Failed
     TC_RefreshBoth
-    W("Поточний стан").Activate
-    ActiveWindow.DisplayGridlines = False
+    PrepareReadableView W("Поточний стан")
     Exit Sub
 Failed:
     MsgBox Err.Description, vbExclamation, "Поточний стан"
@@ -920,8 +933,7 @@ End Sub
 Public Sub TC_ShowArchive()
     On Error GoTo Failed
     TC_RefreshBoth
-    W("Архів рейсів").Activate
-    ActiveWindow.DisplayGridlines = False
+    PrepareReadableView W("Архів рейсів")
     Exit Sub
 Failed:
     MsgBox Err.Description, vbExclamation, "Архів рейсів"
