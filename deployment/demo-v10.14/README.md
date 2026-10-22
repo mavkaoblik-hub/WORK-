@@ -1,3 +1,16 @@
+## v10.14.7 — another optimization pass: ledger snapshots and stable UI
+
+- **Core COM calls:** the original refresh read `TC_Рейси` and `TC_Витрати` field-by-field. Now `TC_RefreshBoth` reads the populated A:AB and A:K rectangular ledger ranges **once** using Excel `Range.Value`, and traverses those VBA arrays when computing current/archive rows and expense allocations. All source journals remain unchanged.
+- **Refresh policy:** `Workbook_SheetChange` invalidates the dashboard upon ledger/catalogue/FX edits. Otherwise, already-rendered pages are reused for the **entire local calendar day**, instead of being rebuilt every 20 seconds while switching tabs. Workbook open and the explicit refresh commands still force regeneration. Daily age/risk indicators are refreshed at next activation after midnight.
+- **Manual refresh coherence:** successful `TC_RefreshBoth` notifies the workbook event cache via `ThisWorkbook.TC_DashboardRendered`. This prevents a duplicate render immediately after an explicit refresh activates a tab.
+- **Printer/preview interaction:** `PageSetup` is configured only once per Excel session, avoiding repeated default printer driver calls.
+- **Safety:** existing `EnableEvents` and `ScreenUpdating` values are restored. No network calls, new macros that modify the ledger, or scheduled timers were introduced. USD ledger values and PDF report logic remain unchanged.
+
+**Expected impact:** less COM traffic on large ledgers and much faster navigation across already-calculated pages. **Not a measured speedup** until the user tests in Excel LTSC on Windows. The source-only GitHub Actions artifact does not contain an XLSX; the full chat-distributed ZIP does.
+
+**QA:** structural VBA checks, packaged-file checks, synthetic 75-trip/259-expense finance invariants, OOXML validation of the 13-sheet demo base, and retained bootstrap/installation files. Do not install over an existing `.xlsm`.
+
+---
 ## v10.14.6 OPTIMIZED — reading and performance
 
 User's v10.14.5 Windows Excel screenshots confirm that the live and archive sheets now render and show the expected demo counts (3 active, 70 completed, 2 planned). The previous reports, however, were too wide, fine-text, and slow to refresh.
