@@ -306,6 +306,14 @@ Public Function TC_EquivalentUSD(ByVal usdAmount As Double, ByVal code As String
     End If
 End Function
 
+Private Function DisplayCategory(ByVal cache As Object, ByVal trip As String) As String
+    If cache.Exists(trip) Then
+        DisplayCategory = CStr(cache(trip))
+    Else
+        DisplayCategory = "—"
+    End If
+End Function
+
 Private Function CategorySummary(ByVal d As Object, ByVal trip As String) As String
     Dim v As Variant, result As String, k As String, amount As Double
     For Each v In d.Keys
@@ -575,7 +583,7 @@ Private Sub ArchiveTrendChart(ByVal sh As Worksheet, ByVal monthlyHeader As Long
     Dim obj As ChartObject, topRow As Long
     If lastMonthRow < monthlyHeader + 2 Then Exit Sub
     On Error GoTo ChartNotSupported
-    topRow = lastMonthRow + 5
+    topRow = Application.Max(lastMonthRow + 5, Last(sh, 1) + 6)
     Set obj = sh.ChartObjects.Add(sh.Range("A" & topRow).Left, _
         sh.Range("A" & topRow).Top, 790, 275)
     With obj.Chart
@@ -614,8 +622,18 @@ Public Sub TC_RefreshBoth()
     Dim planStart As Variant, actualEnd As Variant, cost As Double, total As Double
     Dim refreshStage As String, sourceError As Long, sourceText As String, errorSource As String
     Dim sourceLine As Long, errorText As String
+    Dim oldUpdating As Boolean, oldEvents As Boolean, viewPrepared As Boolean
+    Dim categoryText As Object, v As Variant, lookupKey As String, currentText As String
+    Dim detailBuffer() As Variant, detailValues() As Variant
+    Dim costRowCount As Long, maxExpenseRows As Long, colIndex As Long
+    Dim detailRegion As Range
     refreshStage = "01 / sheets"
     On Error GoTo Failed
+    oldUpdating = Application.ScreenUpdating
+    oldEvents = Application.EnableEvents
+    viewPrepared = True
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
     Set trips = W("TC_Рейси"): Set expenses = W("TC_Витрати")
     Set live = W("Поточний стан"): Set history = W("Архів рейсів")
     refreshStage = "02 / driver and route catalogues"
@@ -623,6 +641,8 @@ Public Sub TC_RefreshBoth()
     refreshStage = "03 / dictionary initialization"
     Set byTrip = CreateObject("Scripting.Dictionary")
     Set categoryTrip = CreateObject("Scripting.Dictionary")
+    Set categoryText = CreateObject("Scripting.Dictionary")
+    categoryText.CompareMode = vbTextCompare
     Set stateOf = CreateObject("Scripting.Dictionary")
     Set byCategoryAll = CreateObject("Scripting.Dictionary")
     Set byCategoryFinished = CreateObject("Scripting.Dictionary")
@@ -644,10 +664,13 @@ Public Sub TC_RefreshBoth()
         If id <> "" Then
             driver = S(trips.Cells(tr, 3).Value2)
             tripDriver(id) = driver
+            stateOf(id) = S(trips.Cells(tr, 8).Value2)
             If driver <> "" And Not persons.Exists(driver) Then persons(driver) = driver
         End If
     Next tr
     refreshStage = "05 / aggregate recorded expenses"
+    maxExpenseRows = Application.Max(0, Last(expenses, 2) - ROW0 + 1)
+    If maxExpenseRows > 0 Then ReDim detailBuffer(1 To maxExpenseRows, 1 To 12)
     For er = ROW0 To Last(expenses, 2)
         id = S(expenses.Cells(er, 2).Value2)
         If id <> "" Then
@@ -659,9 +682,38 @@ Public Sub TC_RefreshBoth()
             AddMoney byCategoryAll, category, cost
             If tripDriver.Exists(id) Then AddMoney driverCostAll, CStr(tripDriver(id)), cost
             expenseAll = expenseAll + cost
+            If stateOf.Exists(id) Then
+                If CStr(stateOf(id)) = "Завершено" Then
+                    AddMoney byCategoryFinished, category, cost
+                    costRowCount = costRowCount + 1
+                    detailBuffer(costRowCount, 1) = id
+                    detailBuffer(costRowCount, 2) = expenses.Cells(er, 9).Value2
+                    detailBuffer(costRowCount, 3) = expenses.Cells(er, 3).Value2
+                    detailBuffer(costRowCount, 4) = expenses.Cells(er, 4).Value2
+                    detailBuffer(costRowCount, 5) = expenses.Cells(er, 5).Value2
+                    detailBuffer(costRowCount, 6) = expenses.Cells(er, 6).Value2
+                    detailBuffer(costRowCount, 7) = expenses.Cells(er, 7).Value2
+                    detailBuffer(costRowCount, 8) = expenses.Cells(er, 8).Value2
+                    detailBuffer(costRowCount, 12) = expenses.Cells(er, 10).Value2
+                End If
+            End If
         End If
     Next er
 
+    ' Build category strings once. Previous report scanned every category per trip.
+    For Each v In categoryTrip.Keys
+        lookupKey = CStr(v)
+        tr = InStr(1, lookupKey, "|", vbBinaryCompare)
+        If tr > 1 Then
+            id = Left$(lookupKey, tr - 1)
+            currentText = Mid$(lookupKey, tr + 1) & " " & Format$(Money(categoryTrip, lookupKey), "#,##0.00") & " USD"
+            If categoryText.Exists(id) Then
+                categoryText(id) = CStr(categoryText(id)) & "; " & currentText
+            Else
+                categoryText.Add id, currentText
+            End If
+        End If
+    Next v
     refreshStage = "06 / render live header"
     Header live, "ПОТОЧНИЙ СТАН", "активні рейси та їх фактичні витрати"
     refreshStage = "07 / render archive header"
@@ -673,7 +725,11 @@ Public Sub TC_RefreshBoth()
     Bar history, 10, "ЕФЕКТИВНІСТЬ ВОДІЇВ  |  виконані рейси та їх фінансові результати"
     ' Leave enough space for any number of drivers; never overwrite the trip table.
     refreshStage = "09 / section layout"
-    tripSectionRow = Application.Max(18, 14 + persons.Count)
+    monthlyHeader = Application.Max(20, 14 + persons.Count)
+    refreshStage = "09a / archive monthly summary above details"
+    lastMonthlyRow = ArchiveMonthlyTable(history, monthlyHeader, trips, byTrip)
+    tripSectionRow = Application.Max(31, monthlyHeader + 10, lastMonthlyRow + 6)
+    ActiveFinancialSnapshot live, Application.Max(20, 14 + persons.Count), trips, byTrip
     Bar live, tripSectionRow, "АКТИВНІ РЕЙСИ  |  фактичні дані станом на сьогодні"
     Bar history, tripSectionRow, "ЗАВЕРШЕНІ РЕЙСИ  |  повний перелік"
     TableLabels live, tripSectionRow + 2, Array("Рейс ID", "Водій", "Маршрут", "Авто", "Виїзд", "Днів", "Км план", "Км факт зараз", "Витрати USD", "Дохід план USD", "Статус", "На що витрачено (USD)")
@@ -709,7 +765,7 @@ Public Sub TC_RefreshBoth()
                     live.Cells(activeLine, 9).Value = Money(byTrip, id)
                     live.Cells(activeLine, 10).Value = N(trips.Cells(tr, 14).Value2)
                     live.Cells(activeLine, 11).Value = state
-                    live.Cells(activeLine, 12).Value = CategorySummary(categoryTrip, id)
+                    live.Cells(activeLine, 12).Value = DisplayCategory(categoryText, id)
                     Stripe live, activeLine
                     live.Cells(activeLine, 12).WrapText = True
                     If Len(S(live.Cells(activeLine, 12).Value2)) > 85 Then live.Rows(activeLine).RowHeight = 52
@@ -736,7 +792,7 @@ Public Sub TC_RefreshBoth()
                     history.Cells(archiveLine, 9).Value = Money(byTrip, id)
                     history.Cells(archiveLine, 10).Value = N(trips.Cells(tr, 14).Value2)
                     history.Cells(archiveLine, 11).Value = N(trips.Cells(tr, 14).Value2) - Money(byTrip, id)
-                    history.Cells(archiveLine, 12).Value = CategorySummary(categoryTrip, id)
+                    history.Cells(archiveLine, 12).Value = DisplayCategory(categoryText, id)
                     Stripe history, archiveLine
                     history.Cells(archiveLine, 12).WrapText = True
                     If Len(S(history.Cells(archiveLine, 12).Value2)) > 85 Then history.Rows(archiveLine).RowHeight = 52
@@ -813,13 +869,10 @@ Public Sub TC_RefreshBoth()
     refreshStage = "21 / live currency footer"
     FinancialFooter live, categoriesEnd + 2, "ДОХОДИ ЗАВЕРШЕНИХ РЕЙСІВ / ВСІ ЗАРЕЄСТРОВАНІ ВИТРАТИ", incomeFinished, expenseAll
     ' Further operational intelligence lives below the complete ledger tables.
-    refreshStage = "22 / active financial snapshot"
-    ActiveFinancialSnapshot live, categoriesEnd + 14, trips, byTrip
+    refreshStage = "22 / active financial snapshot already rendered near top
     refreshStage = "23 / active risk indicators"
     ActiveRiskSignals live, categoriesEnd + 20, trips, byTrip, persons
-    monthlyHeader = archiveFinanceEnd
-    refreshStage = "24 / archive monthly table"
-    lastMonthlyRow = ArchiveMonthlyTable(history, monthlyHeader, trips, byTrip)
+    refreshStage = "24 / archive monthly table already rendered near top"
     refreshStage = "25 / archive monthly chart"
     If lastMonthlyRow > 0 Then ArchiveTrendChart history, monthlyHeader, lastMonthlyRow
 
