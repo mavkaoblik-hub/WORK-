@@ -319,7 +319,7 @@ Public Sub TC_FormInit(ByVal f As Object)
        mUiParkings Is Nothing Or mUiTrips Is Nothing Then
         Err.Raise vbObjectError + 2460, , "Дані довідників не підготовлені до відкриття форми."
     End If
-    If mMode = "REPORT" Then f.Controls("cboDriver").AddItem "Вся компанія"
+    If mMode = "REPORT" Then f.Controls("cboDriver").AddItem "Усі водії (компанія)"
     For Each entry In mUiDrivers: f.Controls("cboDriver").AddItem CStr(entry): Next entry
     For Each entry In mUiVehicles: f.Controls("cboVehicle").AddItem CStr(entry): Next entry
     For Each entry In mUiRoutes: f.Controls("cboRoute").AddItem CStr(entry): Next entry
@@ -474,12 +474,12 @@ Private Sub ApplyFormMode(ByVal f As Object)
         Case "REPORT"
             f.Controls("lblTitle").Caption = "ЗВІТНІСТЬ: ПЕРІОД ТА ГРАФІКИ"
             EnableCombo f, "Kind", "Період звіту"
-            EnableCombo f, "Driver", "Компанія або водій"
+            EnableCombo f, "Driver", "Для кого звіт"
             f.Controls("cboKind").ListIndex = 0
             f.Controls("cboDriver").ListIndex = 0
             Field f, 1, "З якої дати (РРРР-ММ-ДД)", Format$(DateSerial(Year(Date), Month(Date), 1), "yyyy-mm-dd")
             Field f, 2, "По яку дату / станом на", Format$(Date, "yyyy-mm-dd")
-            f.Controls("lblPreview").Caption = "Звіт міститиме підсумки компанії, водіїв і графіки. За весь період перша дата ігнорується."
+            f.Controls("lblPreview").Caption = "За замовчуванням — УСІ водії. Виберіть одного для персонального звіту. За весь період перша дата ігнорується."
             f.Controls("cmdSave").Caption = "Сформувати звіт PDF"
     End Select
 End Sub
@@ -985,7 +985,7 @@ Private Sub SaveReport(ByVal f As Object)
     End If
     If startDate > endDate Then Err.Raise 2292, , "Дата початку пізніша за дату завершення."
     driverText = UiText(f.Controls("cboDriver").Text)
-    If Len(driverText) > 0 And driverText <> "Вся компанія" Then
+    If Len(driverText) > 0 And driverText <> "Усі водії (компанія)" Then
         driverId = DriverIdFromDisplay(driverText)
         If Len(driverId) = 0 Then Err.Raise 2293, , "Не знайдено вибраного водія."
     End If
