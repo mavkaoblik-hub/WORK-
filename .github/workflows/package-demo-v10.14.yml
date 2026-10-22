@@ -49,6 +49,8 @@ jobs:
               assert sum(x['status']=='У рейсі' for x in d['trips'])==3
               assert abs(sum(x['revenue_usd'] for x in d['trips'] if x['status']=='Завершено')-149987.91)<0.001
               assert abs(sum(x['usd'] for x in d['expenses'])-48211.73)<0.001
+          installer=z.read('Транспортний_центр_DEMO_v10.14/INSTALL_OFFLINE.ps1').decode('utf-8-sig')
+          assert 'VBA_SMOKE_TEST_FAILED.txt' in installer, 'Missing strict status-failure handling'
           assert not any(x.endswith(".xlsx") for x in names), "CI ZIP is SOURCE-ONLY, do not mislabel as full"
           print("SOURCE-ONLY ZIP, 75 fictional trips, 259 expenses: PASS. Full ZIP requires prebuilt base XLSX.")
           PY
