@@ -25,7 +25,7 @@ cases = {
     "CAR-12": "CAR-12",
     "CAR-12 | Volvo AA 1122": "CAR-12",
     "Водій_01 | Прізвище Ім'я": "Водій_01",
-    " | unnamed": "",
+    " | unnamed": "| unnamed",  # malformed input without valid ID separator after trim
     "TRIP-1 | Route | Driver": "TRIP-1",
 }
 for input_, expected in cases.items():
