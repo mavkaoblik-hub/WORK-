@@ -100,7 +100,7 @@ def main():
                     raise FileNotFoundError(path)
                 z.write(path,arcname=f"{PREFIX}/{dst}")
             z.write(seed,arcname=f"{PREFIX}/data/demo_seed.json")
-            z.writestr(f"{PREFIX}/START_INSTALL.cmd",INSTALL_CMD.encode("utf-8-sig"))
+            z.writestr(f"{PREFIX}/START_INSTALL.cmd",INSTALL_CMD.encode("ascii"))
             z.writestr(f"{PREFIX}/ІНСТРУКЦІЯ_ТЕСТУВАННЯ.txt",README.encode("utf-8-sig"))
         with zipfile.ZipFile(out) as z:
             assert z.testzip() is None
