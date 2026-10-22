@@ -71,7 +71,7 @@ print("PASS: saved XLSM lifecycle and currency fallback/error stages")
 assert 'reportArea.Clear' in s and 'sheet.Cells.Clear' not in s
 assert 'With reportArea.Font' in s and 'sheet.Cells.Font' not in s
 assert 'detailRegion.Value2 = detailValues' in s
-assert s.count('For er = ROW0 To Last(expenses, 2)') == 1
+assert s.count('For er = ROW0 To lastExpense') == 1
 assert 'DisplayCategory(categoryText, id)' in s
 assert 'lastMonthlyRow = ArchiveMonthlyTable(history, monthlyHeader, trips, byTrip)' in s
 assert 'ActiveFinancialSnapshot live, Application.Max(20' in s
