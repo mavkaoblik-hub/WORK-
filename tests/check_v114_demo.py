@@ -79,6 +79,19 @@ assert 'Application.ScreenUpdating = oldUpdating' in s
 events=Path('deployment/demo-v10.14/TransportWorkbookEvents.txt').read_text(encoding='utf-8-sig')
 assert 'mStatusLastRefresh As Date' in events
 assert 'Workbook_SheetChange(ByVal Sh As Object' in events
-assert 'DateDiff("s", mStatusLastRefresh, Now) < 20' in events
+assert 'DateValue(mStatusLastRefresh) = Date' in events
 assert 'Private Sub RibbonRestore()' in events and 'Workbook_BeforeClose(Cancel As Boolean)' in events
-print('PASS: v10.14.6 compact reports, batch receipts, fresh monthly insights, 20s cache and ribbon restore')
+print('PASS: v10.14.6 compact reports, batch receipts, fresh monthly insights, event-driven cache and ribbon restore')
+
+# v10.14.7: COM input snapshot, manual update synchronization, no stale tab rebuild.
+assert 'tripData = trips.Range("A" & ROW0 & ":AB" & lastTrip).Value' in s
+assert 'expenseData = expenses.Range("A" & ROW0 & ":K" & lastExpense).Value' in s
+assert 'tripData(tr - ROW0 + 1, 14)' in s
+assert 'expenseData(er - ROW0 + 1, 8)' in s
+assert 'ThisWorkbook.TC_DashboardRendered' in s
+assert 'Public Sub TC_DashboardRendered()' in events
+assert 'DateValue(mStatusLastRefresh) = Date' in events
+assert 'DateDiff("s", mStatusLastRefresh, Now) < 20' not in events
+assert 'Workbook_SheetChange(ByVal Sh As Object' in events
+assert 'Application.EnableEvents = oldEvents' in s
+print('PASS: v10.14.7 two ledger COM snapshots, change-driven refresh and manual sync')
