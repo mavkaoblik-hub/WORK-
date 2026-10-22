@@ -35,13 +35,13 @@ jobs:
           with zipfile.ZipFile(p) as z:
               assert z.testzip() is None
               names=z.namelist()
-              assert all(x.startswith('Транспортний_центр_DEMO_v10.14.4/') for x in names)
+              assert all(x.startswith('Транспортний_центр_DEMO_v10.14.5/') for x in names)
               required=['START_INSTALL.cmd', 'BOOTSTRAP_INSTALL.ps1', 'INSTALL_OFFLINE.ps1', 'CREATE_DEMO_BASE.ps1',
                         'DEMO_SEED.ps1', 'data/demo_seed.json', 'vba/TransportInsights.bas',
                         'vba/TransportStatusFX.bas', 'vba/TransportApp.bas',
                         'vba/TransportCenter.bas', 'data/routes_europe.json']
-              for x in required: assert 'Транспортний_центр_DEMO_v10.14.4/'+x in names, x
-              d=json.loads(z.read('Транспортний_центр_DEMO_v10.14.4/data/demo_seed.json'))
+              for x in required: assert 'Транспортний_центр_DEMO_v10.14.5/'+x in names, x
+              d=json.loads(z.read('Транспортний_центр_DEMO_v10.14.5/data/demo_seed.json'))
               assert d['kind']=='TRANSPORT_DEMO_SEED_V1' and d['fictional']
               assert len(d['drivers'])==7 and len(d['vehicles'])==9
               assert len(d['trips'])==75 and len(d['expenses'])==259
@@ -49,20 +49,20 @@ jobs:
               assert sum(x['status']=='У рейсі' for x in d['trips'])==3
               assert abs(sum(x['revenue_usd'] for x in d['trips'] if x['status']=='Завершено')-149987.91)<0.001
               assert abs(sum(x['usd'] for x in d['expenses'])-48211.73)<0.001
-              installer=z.read('Транспортний_центр_DEMO_v10.14.4/INSTALL_OFFLINE.ps1').decode('utf-8-sig')
+              installer=z.read('Транспортний_центр_DEMO_v10.14.5/INSTALL_OFFLINE.ps1').decode('utf-8-sig')
               assert 'VBA_SMOKE_TEST_FAILED.txt' in installer, 'Missing strict status-failure handling'
               assert not any(x.endswith(".xlsx") for x in names), "CI ZIP is SOURCE-ONLY, do not mislabel as full"
-              cmd=z.read('Транспортний_центр_DEMO_v10.14.4/START_INSTALL.cmd')
+              cmd=z.read('Транспортний_центр_DEMO_v10.14.5/START_INSTALL.cmd')
               assert cmd.isascii(), 'Launcher must contain ASCII bytes only'
               assert b'BOOTSTRAP_INSTALL.ps1' in cmd
-              startup=z.read('Транспортний_центр_DEMO_v10.14.4/BOOTSTRAP_INSTALL.ps1')
+              startup=z.read('Транспортний_центр_DEMO_v10.14.5/BOOTSTRAP_INSTALL.ps1')
               assert startup.startswith(bytes((239,187,191))), 'Powershell 5.1 requires UTF-8 BOM for Ukrainian filenames'
           print("SOURCE-ONLY ZIP, ASCII launcher/Unicode bootstrap, 75 fictional trips, 259 expenses: PASS.")
           PY
       - name: Upload source-only ZIP (base XLSX is not included)
         uses: actions/upload-artifact@v4
         with:
-          name: Transport_Center_DEMO_v10.14.4_SOURCE_ONLY
+          name: Transport_Center_DEMO_v10.14.5_SOURCE_ONLY
           path: dist/Transport_Center_DEMO_v10.14.zip
           if-no-files-found: error
           compression-level: 0
