@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 PREFIX="Транспортний_центр_DEMO_v10.14"
 FILES={
- "deployment/demo-v10.12/INSTALL_OFFLINE.ps1":"INSTALL_OFFLINE.ps1",
+ "deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1":"INSTALL_OFFLINE.ps1",
  "deployment/demo-v10.10/DEMO_SEED.ps1":"DEMO_SEED.ps1",
  "deployment/demo-v10.14/CREATE_DEMO_BASE.ps1":"CREATE_DEMO_BASE.ps1",
  "vba/TransportCenter.bas":"vba/TransportCenter.bas",
