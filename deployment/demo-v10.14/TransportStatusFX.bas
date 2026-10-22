@@ -627,6 +627,8 @@ Public Sub TC_RefreshBoth()
     Dim detailBuffer() As Variant, detailValues() As Variant
     Dim costRowCount As Long, maxExpenseRows As Long, colIndex As Long
     Dim detailRegion As Range
+    Dim tripData As Variant, expenseData As Variant, lastExpense As Long
+    Dim tripRows As Long, expenseRows As Long
     refreshStage = "01 / sheets"
     On Error GoTo Failed
     oldUpdating = Application.ScreenUpdating
@@ -636,6 +638,13 @@ Public Sub TC_RefreshBoth()
     Application.EnableEvents = False
     Set trips = W("TC_Рейси"): Set expenses = W("TC_Витрати")
     Set live = W("Поточний стан"): Set history = W("Архів рейсів")
+    ' One COM read per ledger replaces thousands of per-cell reads.
+    lastTrip = Last(trips, 1)
+    lastExpense = Last(expenses, 2)
+    tripRows = Application.Max(0, lastTrip - ROW0 + 1)
+    expenseRows = Application.Max(0, lastExpense - ROW0 + 1)
+    If tripRows > 0 Then tripData = trips.Range("A" & ROW0 & ":AB" & lastTrip).Value
+    If expenseRows > 0 Then expenseData = expenses.Range("A" & ROW0 & ":K" & lastExpense).Value
     refreshStage = "02 / driver and route catalogues"
     Set persons = Drivers(): Set paths = Routes()
     refreshStage = "03 / dictionary initialization"
@@ -659,24 +668,24 @@ Public Sub TC_RefreshBoth()
     Set driverCostDone = CreateObject("Scripting.Dictionary")
     refreshStage = "04 / map trip ownership"
     tripDriver.CompareMode = vbTextCompare
-    For tr = ROW0 To Last(trips, 1)
-        id = S(trips.Cells(tr, 1).Value2)
+    For tr = ROW0 To lastTrip
+        id = S(tripData(tr - ROW0 + 1, 1))
         If id <> "" Then
-            driver = S(trips.Cells(tr, 3).Value2)
+            driver = S(tripData(tr - ROW0 + 1, 3))
             tripDriver(id) = driver
-            stateOf(id) = S(trips.Cells(tr, 8).Value2)
+            stateOf(id) = S(tripData(tr - ROW0 + 1, 8))
             If driver <> "" And Not persons.Exists(driver) Then persons(driver) = driver
         End If
     Next tr
     refreshStage = "05 / aggregate recorded expenses"
-    maxExpenseRows = Application.Max(0, Last(expenses, 2) - ROW0 + 1)
+    maxExpenseRows = expenseRows
     If maxExpenseRows > 0 Then ReDim detailBuffer(1 To maxExpenseRows, 1 To 12)
-    For er = ROW0 To Last(expenses, 2)
-        id = S(expenses.Cells(er, 2).Value2)
+    For er = ROW0 To lastExpense
+        id = S(expenseData(er - ROW0 + 1, 2))
         If id <> "" Then
-            cost = N(expenses.Cells(er, 8).Value2)
+            cost = N(expenseData(er - ROW0 + 1, 8))
             AddMoney byTrip, id, cost
-            category = S(expenses.Cells(er, 3).Value2)
+            category = S(expenseData(er - ROW0 + 1, 3))
             If category = "" Then category = "Інші"
             AddMoney categoryTrip, id & "|" & category, cost
             AddMoney byCategoryAll, category, cost
@@ -687,14 +696,14 @@ Public Sub TC_RefreshBoth()
                     AddMoney byCategoryFinished, category, cost
                     costRowCount = costRowCount + 1
                     detailBuffer(costRowCount, 1) = id
-                    detailBuffer(costRowCount, 2) = expenses.Cells(er, 9).Value2
-                    detailBuffer(costRowCount, 3) = expenses.Cells(er, 3).Value2
-                    detailBuffer(costRowCount, 4) = expenses.Cells(er, 4).Value2
-                    detailBuffer(costRowCount, 5) = expenses.Cells(er, 5).Value2
-                    detailBuffer(costRowCount, 6) = expenses.Cells(er, 6).Value2
-                    detailBuffer(costRowCount, 7) = expenses.Cells(er, 7).Value2
-                    detailBuffer(costRowCount, 8) = expenses.Cells(er, 8).Value2
-                    detailBuffer(costRowCount, 12) = expenses.Cells(er, 10).Value2
+                    detailBuffer(costRowCount, 2) = expenseData(er - ROW0 + 1, 9)
+                    detailBuffer(costRowCount, 3) = expenseData(er - ROW0 + 1, 3)
+                    detailBuffer(costRowCount, 4) = expenseData(er - ROW0 + 1, 4)
+                    detailBuffer(costRowCount, 5) = expenseData(er - ROW0 + 1, 5)
+                    detailBuffer(costRowCount, 6) = expenseData(er - ROW0 + 1, 6)
+                    detailBuffer(costRowCount, 7) = expenseData(er - ROW0 + 1, 7)
+                    detailBuffer(costRowCount, 8) = expenseData(er - ROW0 + 1, 8)
+                    detailBuffer(costRowCount, 12) = expenseData(er - ROW0 + 1, 10)
                 End If
             End If
         End If
@@ -736,14 +745,14 @@ Public Sub TC_RefreshBoth()
     TableLabels history, tripSectionRow + 2, Array("Рейс ID", "Водій", "Маршрут", "Авто", "Виїзд", "Прибуття", "Днів", "Км факт", "Витрати USD", "Дохід USD", "Результат USD", "Структура витрат (USD)")
     refreshStage = "10 / trip details"
     activeLine = tripSectionRow + 3: archiveLine = tripSectionRow + 3
-    For tr = ROW0 To Last(trips, 1)
-        id = S(trips.Cells(tr, 1).Value2)
+    For tr = ROW0 To lastTrip
+        id = S(tripData(tr - ROW0 + 1, 1))
         If id <> "" Then
-            state = S(trips.Cells(tr, 8).Value2)
+            state = S(tripData(tr - ROW0 + 1, 8))
             stateOf(id) = state
-            driver = S(trips.Cells(tr, 3).Value2)
-            planStart = trips.Cells(tr, 9).Value
-            actualEnd = trips.Cells(tr, 10).Value
+            driver = S(tripData(tr - ROW0 + 1, 3))
+            planStart = tripData(tr - ROW0 + 1, 9)
+            actualEnd = tripData(tr - ROW0 + 1, 10)
             Select Case state
                 Case "Заплановано": planned = planned + 1
                 Case "У рейсі"
@@ -752,18 +761,18 @@ Public Sub TC_RefreshBoth()
                     days = TripDays(planStart, actualEnd, True)
                     live.Cells(activeLine, 1).Value = id
                     live.Cells(activeLine, 2).Value = Display(persons, driver)
-                    live.Cells(activeLine, 3).Value = Display(paths, S(trips.Cells(tr, 5).Value2))
-                    live.Cells(activeLine, 4).Value = S(trips.Cells(tr, 4).Value2)
+                    live.Cells(activeLine, 3).Value = Display(paths, S(tripData(tr - ROW0 + 1, 5)))
+                    live.Cells(activeLine, 4).Value = S(tripData(tr - ROW0 + 1, 4))
                     live.Cells(activeLine, 5).Value = planStart
                     live.Cells(activeLine, 6).Value = days
-                    live.Cells(activeLine, 7).Value = N(trips.Cells(tr, 16).Value2)
-                    If IsNumeric(trips.Cells(tr, 27).Value2) Then
-                        live.Cells(activeLine, 8).Value = Application.Max(0, N(trips.Cells(tr, 27).Value2) - N(trips.Cells(tr, 11).Value2))
+                    live.Cells(activeLine, 7).Value = N(tripData(tr - ROW0 + 1, 16))
+                    If IsNumeric(tripData(tr - ROW0 + 1, 27)) Then
+                        live.Cells(activeLine, 8).Value = Application.Max(0, N(tripData(tr - ROW0 + 1, 27)) - N(tripData(tr - ROW0 + 1, 11)))
                     Else
                         live.Cells(activeLine, 8).Value = "одометр не внесено"
                     End If
                     live.Cells(activeLine, 9).Value = Money(byTrip, id)
-                    live.Cells(activeLine, 10).Value = N(trips.Cells(tr, 14).Value2)
+                    live.Cells(activeLine, 10).Value = N(tripData(tr - ROW0 + 1, 14))
                     live.Cells(activeLine, 11).Value = state
                     live.Cells(activeLine, 12).Value = DisplayCategory(categoryText, id)
                     Stripe live, activeLine
@@ -775,23 +784,23 @@ Public Sub TC_RefreshBoth()
                     days = TripDays(planStart, actualEnd, False)
                     durationSum = durationSum + days
                     expenseFinished = expenseFinished + Money(byTrip, id)
-                    incomeFinished = incomeFinished + N(trips.Cells(tr, 14).Value2)
+                    incomeFinished = incomeFinished + N(tripData(tr - ROW0 + 1, 14))
                     AddMoney driverCompleted, driver, 1
                     AddMoney driverDays, driver, days
-                    AddMoney driverKm, driver, N(trips.Cells(tr, 13).Value2)
-                    AddMoney driverIncome, driver, N(trips.Cells(tr, 14).Value2)
+                    AddMoney driverKm, driver, N(tripData(tr - ROW0 + 1, 13))
+                    AddMoney driverIncome, driver, N(tripData(tr - ROW0 + 1, 14))
                     AddMoney driverCostDone, driver, Money(byTrip, id)
                     history.Cells(archiveLine, 1).Value = id
                     history.Cells(archiveLine, 2).Value = Display(persons, driver)
-                    history.Cells(archiveLine, 3).Value = Display(paths, S(trips.Cells(tr, 5).Value2))
-                    history.Cells(archiveLine, 4).Value = S(trips.Cells(tr, 4).Value2)
+                    history.Cells(archiveLine, 3).Value = Display(paths, S(tripData(tr - ROW0 + 1, 5)))
+                    history.Cells(archiveLine, 4).Value = S(tripData(tr - ROW0 + 1, 4))
                     history.Cells(archiveLine, 5).Value = planStart
                     history.Cells(archiveLine, 6).Value = actualEnd
                     history.Cells(archiveLine, 7).Value = days
-                    history.Cells(archiveLine, 8).Value = N(trips.Cells(tr, 13).Value2)
+                    history.Cells(archiveLine, 8).Value = N(tripData(tr - ROW0 + 1, 13))
                     history.Cells(archiveLine, 9).Value = Money(byTrip, id)
-                    history.Cells(archiveLine, 10).Value = N(trips.Cells(tr, 14).Value2)
-                    history.Cells(archiveLine, 11).Value = N(trips.Cells(tr, 14).Value2) - Money(byTrip, id)
+                    history.Cells(archiveLine, 10).Value = N(tripData(tr - ROW0 + 1, 14))
+                    history.Cells(archiveLine, 11).Value = N(tripData(tr - ROW0 + 1, 14)) - Money(byTrip, id)
                     history.Cells(archiveLine, 12).Value = DisplayCategory(categoryText, id)
                     Stripe history, archiveLine
                     history.Cells(archiveLine, 12).WrapText = True
