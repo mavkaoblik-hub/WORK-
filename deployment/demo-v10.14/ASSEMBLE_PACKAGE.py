@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
-PREFIX="Транспортний_центр_DEMO_v10.14.6"
+PREFIX="Транспортний_центр_DEMO_v10.14.7"
 FILES={
  "deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1":"INSTALL_OFFLINE.ps1",
  "deployment/demo-v10.10/DEMO_SEED.ps1":"DEMO_SEED.ps1",
@@ -28,7 +28,7 @@ REM ASCII-only launcher; Unicode filenames belong in BOOTSTRAP_INSTALL.ps1.
 pushd "%~dp0"
 if errorlevel 1 goto location_error
 echo.
-echo Transport Center DEMO v10.14.6 - Windows Excel offline installer
+echo Transport Center DEMO v10.14.7 - Windows Excel offline installer
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\BOOTSTRAP_INSTALL.ps1"
 set "INSTALL_EXIT=%ERRORLEVEL%"
