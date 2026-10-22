@@ -28,7 +28,18 @@ for kind in ['Sub','Function']:
     assert n1==n2,(kind,n1,n2)
 assert 'Invoke-WebRequest' not in s
 p=Path('deployment/demo-v10.14/ASSEMBLE_PACKAGE.py').read_text(encoding='utf-8-sig')
-for tag in ['demo-v10.13/TransportInsights.bas','demo-v10.14/TransportStatusFX.bas','demo-v10.12/INSTALL_OFFLINE.ps1','GENERATE_SEED.py','CREATE_DEMO_BASE.ps1']:
+for tag in ['demo-v10.13/TransportInsights.bas','demo-v10.14/TransportStatusFX.bas','demo-v10.14/INSTALL_DIAGNOSTIC.ps1','GENERATE_SEED.py','CREATE_DEMO_BASE.ps1']:
     assert tag in p,tag
 print('PASS: v10.14 operational analytics and offline package dependency contract')
 print('NOTE: Excel LTSC COM and VBA execution are NOT verified by this test.')
+
+# v10.14.3: original error number/stage must survive; charts non-fatal.
+assert s.count('refreshStage = "') == 26
+assert 'sourceError = Err.Number' in s and 'sourceText = Err.Description' in s
+assert 'TC_STATUS_FAILED' in s and 'errorText = "ЕТАП "' in s
+inst=Path('deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1').read_text(encoding='utf-8-sig')
+assert '$refreshReady = $false' in inst
+assert 'VBA_SMOKE_TEST_FAILED.txt' in inst
+assert 'throw (\'VBA_REFRESH_FAILED:' in inst
+assert p.find('INSTALL_DIAGNOSTIC.ps1') >= 0
+print('PASS: v10.14.3 failure diagnostics, strict installer and package routing')
