@@ -1,3 +1,16 @@
+## v10.14.3: Excel LTSC Run-time error 91 diagnostic
+
+During the user’s v10.14.2 installation, `TransportStatusFX.TC_RefreshBoth` failed with "Object variable or With block variable not set" at its error-rethrow handler. That highlighted line did **not** identify the original failing statement.
+
+The new `TransportStatusFX.bas` records **26 refresh stages**, the original `Err.Number`, `Err.Source`, `Erl` and message, and writes them to both operational sheets' `N1` cells on failure. Chart cleanup is now presentation-only (its errors cannot block ledger rendering).
+
+`INSTALL_DIAGNOSTIC.ps1` **must** be packaged as `INSTALL_OFFLINE.ps1`: the installed XLSM is saved for debugging, but a failed VBA smoke test now produces `VBA_SMOKE_TEST_FAILED.txt` and a nonzero process exit rather than a misleading SUCCESS report. The previous v10.12 installer had swallowed this failure.
+
+This is a **diagnostic release**, not a claim the runtime VBA error has been eliminated. Once the real failing stage is reported, make a narrow root-cause fix. GitHub CI still cannot execute desktop Microsoft Excel VBA.
+
+To locally assemble a FULL version, include the verified synthetic XLSX through `--base-workbook ... --require-base`. A CI source-only ZIP does not include this XLSX.
+
+---
 # Транспортний центр DEMO v10.14.1 — склад повної поставки
 
 **Виправлення 22.10.2026:** перший архів v10.14 не мав фізичного `.xlsx`. Хоча запуск `CREATE_DEMO_BASE.ps1` міг її створити, це не відповідає вимозі повного ZIP. У v10.14.1 тестова база `Транспортний_центр_v8_робочий_Times_New_Roman.xlsx` включена всередину ZIP.
