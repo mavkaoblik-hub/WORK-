@@ -52,11 +52,11 @@ jobs:
               installer=z.read('Транспортний_центр_DEMO_v10.14.4/INSTALL_OFFLINE.ps1').decode('utf-8-sig')
               assert 'VBA_SMOKE_TEST_FAILED.txt' in installer, 'Missing strict status-failure handling'
               assert not any(x.endswith(".xlsx") for x in names), "CI ZIP is SOURCE-ONLY, do not mislabel as full"
-          cmd=z.read('Транспортний_центр_DEMO_v10.14.4/START_INSTALL.cmd')
-          assert cmd.isascii(), 'Launcher must contain ASCII bytes only'
-          assert b'BOOTSTRAP_INSTALL.ps1' in cmd
-          startup=z.read('Транспортний_центр_DEMO_v10.14.4/BOOTSTRAP_INSTALL.ps1')
-          assert startup.startswith(b'\\xef\\xbb\\xbf'), 'Powershell 5.1 requires UTF-8 BOM for Ukrainian filenames'
+              cmd=z.read('Транспортний_центр_DEMO_v10.14.4/START_INSTALL.cmd')
+              assert cmd.isascii(), 'Launcher must contain ASCII bytes only'
+              assert b'BOOTSTRAP_INSTALL.ps1' in cmd
+              startup=z.read('Транспортний_центр_DEMO_v10.14.4/BOOTSTRAP_INSTALL.ps1')
+              assert startup.startswith(bytes((239,187,191))), 'Powershell 5.1 requires UTF-8 BOM for Ukrainian filenames'
           print("SOURCE-ONLY ZIP, ASCII launcher/Unicode bootstrap, 75 fictional trips, 259 expenses: PASS.")
           PY
       - name: Upload source-only ZIP (base XLSX is not included)
