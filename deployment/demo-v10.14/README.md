@@ -1,3 +1,21 @@
+## v10.14.6 OPTIMIZED — reading and performance
+
+User's v10.14.5 Windows Excel screenshots confirm that the live and archive sheets now render and show the expected demo counts (3 active, 70 completed, 2 planned). The previous reports, however, were too wide, fine-text, and slow to refresh.
+
+**Changed in v10.14.6:**
+- `TransportStatusFX.Header`: limit `Clear` and font styling to previously used report rows. Never format an entire million-row Excel sheet as part of refreshing a dashboard.
+- Narrow the A:L report widths, use 11-12 pt Calibri for dense tables, larger KPI cards, and preserve **two fractional USD digits** in money displays.
+- Move the archive's completion-month report above the entire trip list/expense ledger; keep its column chart **after** the detailed report so that it cannot overlap the month table or receipt rows.
+- Pre-compute per-trip expense category narrative once instead of scanning all categories for every trip.
+- Build archive receipt data on a VBA array and write it with one `Range.Value2` operation; pass through existing recorded USD values unchanged.
+- In `ThisWorkbook` add a 20-second refresh throttle for rapid tab switching, reset whenever ledger/catalogue/rate data changes. Manual refresh buttons bypass the throttle. **Ribbon restoration events are preserved.**
+- Restore prior Excel ScreenUpdating and EnableEvents settings after refresh or an exception.
+
+**Quality boundary:** v10.14.6 passed source checks and the FULL ZIP / OOXML / synthetic financial integrity inspection. Actual Excel LTSC performance and runtime behavior need the user's next manual test. Performance improvement is expected from fewer COM calls but no wall-clock speedup is asserted without measurement.
+
+**Demonstration fixtures remain unchanged:** 7 drivers, 9 vehicles, 75 trips, 259 expenses, 114 routes; completed-trip revenue 149,987.91 USD and all receipts 48,211.73 USD. The FULL ZIP supplied in the conversation includes synthetic 13-sheet XLSX. The GitHub Action artifact remains explicitly SOURCE-ONLY; it is not a ready-to-install full package.
+
+---
 ## v10.14.5 — targeted repair after the user's error 91 (22.10.2026)
 
 Confirmed from the screenshot: `ETAP 18 / archive currency footer` failed with VBA error 91, which points at `FinancialFooter` or its FX lookup. The rethrow line was not the root location.
