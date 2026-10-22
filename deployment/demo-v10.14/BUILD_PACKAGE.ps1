@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
 param(
     [string]$OutputZip = (Join-Path (Join-Path (Join-Path $PSScriptRoot '..\..') 'dist') 'Transport_Center_DEMO_v10.14.zip')
