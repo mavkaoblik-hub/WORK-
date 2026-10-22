@@ -52,3 +52,17 @@ assert 'BOOTSTRAP_INSTALL.ps1' in p
 assert 'launcher.isascii()' in p
 assert 'PowerShell' in p or 'powershell.exe' in p
 print('PASS: ASCII-only launcher, BOM bootstrap and non-overwriting output')
+
+# v10.14.5: guard FX display vs. USD ledger and run macros only on saved XLSM.
+assert "On Error GoTo RateUnavailable" in s
+assert "If fxSheet Is Nothing Then GoTo RateUnavailable" in s
+assert "TC_FX_RATE_UNAVAILABLE:" in s
+assert 'footerStep = fx & ": revenue"' in s
+assert "TC_FINANCIAL_FOOTER_ERROR:" in s
+source_inst=Path("deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1").read_text(encoding="utf-8-sig")
+save_pos=source_inst.index("$book.SaveAs($target,52)")
+macro_pos=source_inst.index("[void]$excel.Run($runName)")
+persist_pos=source_inst.index("$book.Save()")
+assert save_pos < macro_pos < persist_pos, "VBA must run in saved XLSM"
+assert source_inst.index("if (-not $refreshReady)") > persist_pos, "failure must be reported after saving diagnostics"
+print("PASS: saved XLSM lifecycle and currency fallback/error stages")
