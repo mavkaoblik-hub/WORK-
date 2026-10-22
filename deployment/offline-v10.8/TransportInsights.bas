@@ -229,7 +229,7 @@ Public Sub TC_RefreshLive()
         activeRow = 13
     End If
     completedStart = activeRow + 3
-    StyleHeader w, "A" & completedStart & ":K" & completedStart, "ОСТАННІ ЗАВЕРШЕНІ РЕЙСИ  |  повна історія доступна у звіті")
+    StyleHeader w, "A" & completedStart & ":K" & completedStart, "ОСТАННІ ЗАВЕРШЕНІ РЕЙСИ  |  повна історія доступна у звіті"
     TableHeader w, completedStart + 1, Array("Рейс ID", "Водій", "Маршрут", "Авто", "Виїзд", "Прибуття", "Днів", "Км факт", "Витрати USD", "Дохід USD", "Результат USD")
     closedRow = completedStart + 2
     For i = closedList.Count To Application.Max(1, closedList.Count - MAX_VISIBLE_CLOSED + 1) Step -1
