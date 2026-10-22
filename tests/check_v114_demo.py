@@ -22,8 +22,8 @@ for kind in ['Sub','Function']:
     n2=len(re.findall(r'^\s*End '+kind+r'\s*$',s,re.M))
     assert n1==n2,(kind,n1,n2)
 assert 'Invoke-WebRequest' not in s
-p=Path('deployment/demo-v10.14/BUILD_PACKAGE.ps1').read_text(encoding='utf-8-sig')
-for tag in ['demo-v10.13/TransportInsights.bas','demo-v10.14/TransportStatusFX.bas','demo-v10.12/INSTALL_OFFLINE.ps1','TRANSPORT_DEMO_SEED_V1']:
+p=Path('deployment/demo-v10.14/ASSEMBLE_PACKAGE.py').read_text(encoding='utf-8-sig')
+for tag in ['demo-v10.13/TransportInsights.bas','demo-v10.14/TransportStatusFX.bas','demo-v10.12/INSTALL_OFFLINE.ps1','GENERATE_SEED.py','CREATE_DEMO_BASE.ps1']:
     assert tag in p,tag
 print('PASS: v10.14 operational analytics and offline package dependency contract')
 print('NOTE: Excel LTSC COM and VBA execution are NOT verified by this test.')
