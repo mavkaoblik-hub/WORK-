@@ -2,6 +2,7 @@
 """Pack complete fictional v10.14 source+one-click Windows Excel installer as ZIP."""
 import argparse
 import hashlib
+import json
 import subprocess
 import sys
 import tempfile
@@ -19,7 +20,6 @@ FILES={
  "deployment/demo-v10.13/TransportInsights.bas":"vba/TransportInsights.bas",
  "deployment/demo-v10.14/TransportStatusFX.bas":"vba/TransportStatusFX.bas",
  "deployment/demo-v10.12/TransportWorkbookEvents.txt":"vba/TransportWorkbookEvents.txt",
- "data/routes_europe.json":"data/routes_europe.json",
 }
 INSTALL_CMD=r"""@echo off
 chcp 65001 >nul
@@ -99,6 +99,18 @@ def main():
                 if not path.is_file():
                     raise FileNotFoundError(path)
                 z.write(path,arcname=f"{PREFIX}/{dst}")
+            raw=json.loads((ROOT/"data/routes_europe.json").read_text(encoding="utf-8-sig"))
+            listed=raw["routes"] if isinstance(raw,dict) else raw
+            if len(listed)!=114: raise ValueError("Route catalogue is not 114 entries")
+            normalized=[{
+                "id":v["id"],"start":v.get("start",v.get("from")),
+                "end":v.get("end",v.get("to")),"km":v["km"],
+                "hours":v.get("hours"),"typ":v.get("typ",v.get("kind","")),
+                "source":v.get("source",""),"year":v.get("year",v.get("source_year",2026)),
+                "note":v.get("note",v.get("remark",""))
+            } for v in listed]
+            z.writestr(f"{PREFIX}/data/routes_europe.json",
+                       json.dumps(normalized,ensure_ascii=False,indent=2).encode("utf-8"))
             z.write(seed,arcname=f"{PREFIX}/data/demo_seed.json")
             z.writestr(f"{PREFIX}/START_INSTALL.cmd",INSTALL_CMD.encode("ascii"))
             z.writestr(f"{PREFIX}/ІНСТРУКЦІЯ_ТЕСТУВАННЯ.txt",README.encode("utf-8-sig"))
