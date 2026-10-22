@@ -1,5 +1,5 @@
 ﻿#Requires -Version 5.1
-# v10.14.5: All Unicode filenames are interpreted by PowerShell, never cmd.exe.
+# v10.14.7: All Unicode filenames are interpreted by PowerShell, never cmd.exe.
 # The script MUST be UTF-8 with BOM for Windows PowerShell 5.1.
 [CmdletBinding()]
 param()
@@ -10,7 +10,7 @@ $target = Join-Path $root 'Транспортний_центр.xlsm'
 $installer = Join-Path $root 'INSTALL_OFFLINE.ps1'
 $bootstrapLog = Join-Path $root 'BOOTSTRAP_ERROR.txt'
 try {
-    Write-Host 'Transport Center v10.14.5 / Windows PowerShell bootstrap' -ForegroundColor Cyan
+    Write-Host 'Transport Center v10.14.7 / Windows PowerShell bootstrap' -ForegroundColor Cyan
     if (-not (Test-Path -LiteralPath $base -PathType Leaf)) {
         throw 'BASE_XLSX_MISSING: full ZIP was not extracted correctly. Unpack ALL files into a new directory.'
     }
@@ -31,7 +31,7 @@ try {
 } catch {
     $msg = $_.Exception.Message
     @(
-        'Transport Center v10.14.5 bootstrap failure',
+        'Transport Center v10.14.7 bootstrap failure',
         ('Timestamp: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')),
         ('Directory: ' + $root),
         ('Reason: ' + $msg),
