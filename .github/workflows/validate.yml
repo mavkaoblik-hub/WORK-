@@ -21,6 +21,8 @@ jobs:
         run: python3 tests/check_v106_modal.py
       - name: Verify empty ComboBox IDs in v10.7
         run: python3 tests/check_v107_empty_id.py
+      - name: Verify all/individual driver finance report and live status v10.8
+        run: python3 tests/check_v108_reports.py
 
 # This workflow deliberately does not execute VBA or Excel.
 # Full Excel COM tests require a separately provisioned Windows runner
@@ -35,7 +37,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','deployment/offline-v10.3/INSTALL_OFFLINE.ps1','deployment/offline-v10.4/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
+          foreach ($path in @('deployment/AUTOINSTALL.ps1','deployment/offline-v6-route-write-fix.ps1','deployment/offline-v7-numeric-com-test.ps1','deployment/offline-v8-vba-access-preflight.ps1','deployment/offline-v9-save-close-verify.ps1','deployment/offline-v10.1/INSTALL_OFFLINE.ps1','deployment/offline-v10.2/INSTALL_OFFLINE.ps1','deployment/offline-v10.3/INSTALL_OFFLINE.ps1','deployment/offline-v10.4/INSTALL_OFFLINE.ps1','deployment/offline-v10.8/INSTALL_OFFLINE.ps1','INSTALL.ps1','CATALOGS.ps1','RESTORE_BACKUP.ps1')) {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path, [ref]$tokens, [ref]$errors)
