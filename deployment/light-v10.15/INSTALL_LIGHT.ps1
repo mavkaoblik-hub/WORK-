@@ -414,18 +414,18 @@ try {
   $archive.Shapes.Item($archive.Shapes.Count).OnAction="'Транспортний_центр.xlsm'!TransportStatusFX.TC_ShowArchive"
   $rates=$book.Worksheets.Add()
   $rates.Name='Курси валют'
-  $rates.Range('A1:F2').Merge()
+  $rates.Range('A1:M2').Merge()
   $rates.Range('A1').Value2='ТРАНСПОРТНИЙ ЦЕНТР | КУРСИ ВАЛЮТ'
-  $rates.Range('A1:F2').Interior.Color=(243+249*256+247*65536)
-  $rates.Range('A1:F2').Font.Color=(28+80*256+69*65536)
-  $rates.Range('A1:F2').Font.Size=20
-  $rates.Range('A1:F2').Font.Bold=$true
-  $rates.Range('A1:F2').RowHeight=25
-  $rates.Range('A3:F3').Merge()
+  $rates.Range('A1:M2').Interior.Color=(243+249*256+247*65536)
+  $rates.Range('A1:M2').Font.Color=(28+80*256+69*65536)
+  $rates.Range('A1:M2').Font.Size=20
+  $rates.Range('A1:M2').Font.Bold=$true
+  $rates.Range('A1:M2').RowHeight=25
+  $rates.Range('A3:M3').Merge()
   $rates.Range('A3').Value2='Курс: скільки PLN коштує 1 одиниця валюти. Порожній курс = конвертація недоступна. Оновлення тільки вручну.'
   $rates.Range('A3').Font.Italic=$true
-  $rates.Range('A1:F28').Font.Name='Segoe UI'
-  $rates.Range('A1:F28').Font.Size=11
+  $rates.Range('A1:M24').Font.Name='Segoe UI'
+  $rates.Range('A1:M24').Font.Size=11
   $rates.Columns.Item('A').ColumnWidth=17
   $rates.Columns.Item('B').ColumnWidth=27
   $rates.Columns.Item('C').ColumnWidth=22
@@ -448,14 +448,27 @@ try {
   $rates.Range('A12:F12').Merge()
   $rates.Range('A12').Value2='Введіть USD/EUR/UAH у жовті поля, потім натисніть Застосувати ручні курси.'
   $rates.Range('A12').Font.Bold=$true
-  $rates.Range('A14:F15').Merge()
-  $rates.Range('A14').Value2='Це курси для перегляду еквівалентів. Облік витрат фіксується в USD під час внесення квитанції. Немає автоматичних запитів до Інтернету.'
-  $rates.Range('A14').WrapText=$true
-  DashboardButton $rates 'Оновити NBP' 'TC_RatesFetchNBP' 'A18'
+  # A compact instructional panel keeps the data entry cells visible and editable.
+  $rates.Range('H5:M5').Merge()
+  $rates.Range('H5').Value2='ЯК ПРАЦЮЮТЬ КУРСИ'
+  $rates.Range('H5:M5').Interior.Color=(226+241*256+235*65536)
+  $rates.Range('H5:M5').Font.Color=(28+80*256+69*65536)
+  $rates.Range('H5:M5').Font.Bold=$true
+  $rates.Range('H6:M11').Merge()
+  $rates.Range('H6').Value2='1. Вкажіть, скільки PLN коштує 1 USD, EUR та UAH у жовтих полях.  2. Натисніть «Застосувати ручні курси».  3. Для оновлення з NBP скористайтеся окремою кнопкою. Курси використовуються для довідкових перерахунків; витрати зберігаються в USD.'
+  $rates.Range('H6:M11').Interior.Color=(246+250*256+248*65536)
+  $rates.Range('H6:M11').Font.Color=(55+84*256+76*65536)
+  $rates.Range('H6:M11').Font.Size=12
+  $rates.Range('H6:M11').WrapText=$true
+  $rates.Range('H6:M11').VerticalAlignment=-4108
+  $rates.Range('B7:B9').Font.Bold=$true
+  $rates.Range('B7:B9').Font.Size=13
+  $rates.Range('A5:E5').RowHeight=30
+  DashboardButton $rates 'Оновити NBP' 'TC_RatesFetchNBP' 'A14'
   $rates.Shapes.Item($rates.Shapes.Count).OnAction="'Транспортний_центр.xlsm'!TransportStatusFX.TC_RatesFetchNBP"
-  DashboardButton $rates 'Застосувати ручні курси' 'TC_RatesManualApply' 'D18'
+  DashboardButton $rates 'Застосувати ручні курси' 'TC_RatesManualApply' 'D14'
   $rates.Shapes.Item($rates.Shapes.Count).OnAction="'Транспортний_центр.xlsm'!TransportStatusFX.TC_RatesManualApply"
-  DashboardButton $rates 'На головну' 'TC_GoHome' 'A22'
+  DashboardButton $rates 'На головну' 'TC_GoHome' 'A18'
   $rates.Shapes.Item($rates.Shapes.Count).OnAction="'Транспортний_центр.xlsm'!TransportInsights.TC_GoHome"
   # All online actions remain exclusively button-initiated.
 

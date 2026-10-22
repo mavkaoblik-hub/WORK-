@@ -30,10 +30,29 @@ $ws.Range('B2').Font.Bold=$true
 $ws.Range('B2').Font.Size=23
 $ws.Range('B2').Font.Color=(RGB 30 82 69)
 $ws.Range('B2:Q3').VerticalAlignment=-4108
-$ws.Range('B4:Q4').Merge()
+$ws.Range('B4:K4').Merge()
 $ws.Range('B4').Value2='Робочий кабінет   /   рейси, автопарк, витрати й аналітика'
 $ws.Range('B4').Font.Color=(RGB 107 123 129)
 $ws.Range('B4').Font.Size=11
+# Internal Excel hyperlinks make off-screen sections accessible in half-screen view.
+$quickNav=@(
+  @('L4:M4','L4','=HYPERLINK("#''Зміст''!B15","РЕЙСИ  ↓")'),
+  @('N4:O4','N4','=HYPERLINK("#''Зміст''!B20","ДОВІДНИКИ  ↓")'),
+  @('P4:Q4','P4','=HYPERLINK("#''Зміст''!B25","ФІНАНСИ  ↓")')
+)
+foreach($shortcut in $quickNav){
+  $r=$ws.Range([string]$shortcut[0])
+  $r.Merge()
+  $ws.Range([string]$shortcut[1]).Formula=[string]$shortcut[2]
+  $r.Interior.Color=(RGB 234 246 240)
+  $r.Font.Name='Segoe UI'
+  $r.Font.Size=9
+  $r.Font.Bold=$true
+  $r.Font.Underline=2
+  $r.Font.Color=(RGB 33 105 82)
+  $r.HorizontalAlignment=-4108
+  $r.VerticalAlignment=-4108
+}
 $ws.Rows.Item(5).RowHeight=17
 $ws.Range('B6:Q6').Merge()
 $ws.Range('B6').Value2='ОГЛЯД ДІЯЛЬНОСТІ'
@@ -102,7 +121,7 @@ $ws.Range('B36').Font.Size=10
 $ws.Range('B36:Q37').WrapText=$true
 $ws.Range('B36:Q37').VerticalAlignment=-4108
 $ws.Range('B40:Q40').Merge()
-$ws.Range('B40').Value2='CLEAN · v10.15.1   |   Без демонстраційних даних'
+$ws.Range('B40').Value2='CLEAN · v10.15.2   |   Без демонстраційних даних'
 $ws.Range('B40').Font.Color=(RGB 137 154 158)
 $ws.Range('B40').Font.Size=10
-Write-Host 'v10.15.1: light dashboard polished; ledgers unchanged.' -ForegroundColor Green
+Write-Host 'v10.15.2: light dashboard navigation and help; ledgers unchanged.' -ForegroundColor Green
