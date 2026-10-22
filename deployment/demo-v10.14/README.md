@@ -1,3 +1,17 @@
+## v10.14.5 — targeted repair after the user's error 91 (22.10.2026)
+
+Confirmed from the screenshot: `ETAP 18 / archive currency footer` failed with VBA error 91, which points at `FinancialFooter` or its FX lookup. The rethrow line was not the root location.
+
+Two code defects/risks were addressed:
+
+- **Install lifecycle:** the previous installer called `Application.Run("...TC_RefreshBoth")` from a workbook that was still an **XLSX** containing injected VBA. The installer now **saves XLSM first**, runs the smoke test using the saved workbook name, and saves the refreshed workbook (or primary diagnostic) again.
+- **Read-only FX lookup:** `Rate` now guards missing/unavailable `Курси валют` objects and invalid rates and returns 0, so an unavailable reference rate displays `немає курсу` without invalidating USD ledger. `FinancialFooter` now reports its own exact substep and primary error code if another error occurs.
+
+**Truth in release quality:** static Python and GitHub Actions tests were run; no local Windows Excel runtime is available in this environment. v10.14.5 is an isolated **test installer** to verify on the user's Excel LTSC, not a proven functioning production workbook. Do not migrate production data.
+
+The FULL zip prepared in the chat includes the already validated synthetic XLSX. The Actions artifact remains explicitly SOURCE-ONLY. Do not confuse them.
+
+---
 ## v10.14.4 — Windows launcher Unicode repair (22.10.2026)
 
 Observed on Windows CMD: garbled Ukrainian XLSX/XLSM names caused `'...is not recognized as an internal or external command'`, followed by `XLSM already exists` on a reused folder. This was a **launcher codepage failure**, unrelated to the status/archival VBA error 91.
