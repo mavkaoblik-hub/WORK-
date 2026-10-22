@@ -23,6 +23,8 @@ jobs:
         run: python3 tests/check_v107_empty_id.py
       - name: Verify all/individual driver finance report and live status v10.8
         run: python3 tests/check_v108_reports.py
+      - name: Audit v10.10 status, archive, categories and four currencies
+        run: python3 tests/check_v110_audit.py
 
 # This workflow deliberately does not execute VBA or Excel.
 # Full Excel COM tests require a separately provisioned Windows runner
