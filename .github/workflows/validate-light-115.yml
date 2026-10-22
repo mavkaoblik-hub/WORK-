@@ -1,0 +1,41 @@
+name: Validate light interface v10.15
+on:
+  push:
+    branches:
+      - feature/v10.15-light-dashboard
+  pull_request:
+    paths:
+      - 'deployment/light-v10.15/**'
+      - 'tests/check_light_115.py'
+      - '.github/workflows/validate-light-115.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify light UI and clean ledger
+        run: python3 tests/check_light_115.py
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse Windows PowerShell 5.1 installer and theme
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach($path in @(
+            'deployment/light-v10.15/DESIGN_LIGHT.ps1',
+            'deployment/light-v10.15/INSTALL_LIGHT.ps1'
+          )){
+            $tokens=$null; $issues=$null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+                (Resolve-Path $path).Path, [ref]$tokens, [ref]$issues)
+            if($issues.Count -gt 0){
+              $issues | ForEach-Object {Write-Error $_.Message}
+              throw "PowerShell parse failed: $path"
+            }
+            Write-Host "Syntax OK: $path"
+          }
