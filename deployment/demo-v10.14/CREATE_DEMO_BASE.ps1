@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
 param([string]$OutputFile = (Join-Path $PSScriptRoot 'Транспортний_центр_v8_робочий_Times_New_Roman.xlsx'))
 $ErrorActionPreference = 'Stop'
