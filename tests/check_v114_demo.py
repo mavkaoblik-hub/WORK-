@@ -43,3 +43,12 @@ assert 'VBA_SMOKE_TEST_FAILED.txt' in inst
 assert 'throw (\'VBA_REFRESH_FAILED:' in inst
 assert p.find('INSTALL_DIAGNOSTIC.ps1') >= 0
 print('PASS: v10.14.3 failure diagnostics, strict installer and package routing')
+
+# v10.14.4: prevention of cmd.exe Unicode path corruption seen on Windows LTSC.
+bootstrap=Path('deployment/demo-v10.14/BOOTSTRAP_INSTALL.ps1').read_bytes()
+assert bootstrap.startswith(b'\\xef\\xbb\\xbf'), 'PowerShell 5.1 needs Unicode BOM'
+assert b'XLSM_EXISTS' in bootstrap and b'BOOTSTRAP_ERROR.txt' in bootstrap
+assert 'BOOTSTRAP_INSTALL.ps1' in p
+assert 'launcher.isascii()' in p
+assert 'PowerShell' in p or 'powershell.exe' in p
+print('PASS: ASCII-only launcher, BOM bootstrap and non-overwriting output')
