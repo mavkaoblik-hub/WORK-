@@ -428,10 +428,22 @@ Private Sub ActiveFinancialSnapshot(ByVal sh As Worksheet, ByVal atRow As Long, 
     sh.Cells(atRow + 2, 2).Value = forecast
     sh.Cells(atRow + 2, 3).Value = spent
     sh.Cells(atRow + 2, 4).Value = forecast - spent
-    sh.Cells(atRow + 2, 5).Value = "Прогноз, НЕ прибуток: майбутні витрати ще не відомі"
     Stripe sh, atRow + 2
-    sh.Cells(atRow + 2, 5).WrapText = True
-    sh.Rows(atRow + 2).RowHeight = 43
+    ' Merge empty explanation columns so financial text is no longer clipped.
+    With sh.Range(sh.Cells(atRow + 1, 5), sh.Cells(atRow + 1, 12))
+        .Merge
+        .Value = "Пояснення фінансового прогнозу"
+        .HorizontalAlignment = xlLeft
+    End With
+    With sh.Range(sh.Cells(atRow + 2, 5), sh.Cells(atRow + 2, 12))
+        .Merge
+        .Value = "Планова виручка мінус зареєстровані витрати — це прогноз, а не фактичний прибуток."
+        .Font.Size = 11
+        .Font.Color = RGB(72, 98, 92)
+        .WrapText = True
+        .VerticalAlignment = xlCenter
+    End With
+    sh.Rows(atRow + 2).RowHeight = 36
 End Sub
 
 Private Sub ActiveRiskSignals(ByVal sh As Worksheet, ByVal atRow As Long, _
@@ -739,7 +751,7 @@ Public Sub TC_RefreshBoth()
     refreshStage = "09a / archive monthly summary above details"
     lastMonthlyRow = ArchiveMonthlyTable(history, monthlyHeader, trips, byTrip)
     tripSectionRow = Application.Max(31, monthlyHeader + 10, lastMonthlyRow + 6)
-    ActiveFinancialSnapshot live, Application.Max(20, 14 + persons.Count), trips, byTrip
+    ActiveFinancialSnapshot live, IIf(persons.Count = 0, 15, Application.Max(20, 14 + persons.Count)), trips, byTrip
     Bar live, tripSectionRow, "АКТИВНІ РЕЙСИ  |  фактичні дані станом на сьогодні"
     Bar history, tripSectionRow, "ЗАВЕРШЕНІ РЕЙСИ  |  повний перелік"
     TableLabels live, tripSectionRow + 2, Array("Рейс ID", "Водій", "Маршрут", "Авто", "Виїзд", "Днів", "Км план", "Км факт зараз", "Витрати USD", "Дохід план USD", "Статус", "На що витрачено (USD)")
@@ -816,6 +828,27 @@ Public Sub TC_RefreshBoth()
     DriverOverview live, persons, 12, driverCompleted, driverActive, driverKm, driverDays, driverIncome, driverCostAll, False
     refreshStage = "12 / driver overview archive"
     DriverOverview history, persons, 12, driverCompleted, driverActive, driverKm, driverDays, driverIncome, driverCostDone, True
+    ' Empty-state guidance appears only if there are no drivers or trips.
+    If persons.Count = 0 And completed = 0 And active = 0 And planned = 0 Then
+        With live.Range("A13:L14")
+            .Merge
+            .Value = "Початок роботи: на головній панелі додайте автомобіль і водія, потім створіть перший рейс."
+            .Font.Color = RGB(50, 100, 86)
+            .Interior.Color = RGB(242, 249, 245)
+            .Font.Size = 11
+            .WrapText = True
+            .VerticalAlignment = xlCenter
+        End With
+        With history.Range("A13:L16")
+            .Merge
+            .Value = "Архів поки порожній. Тут з’являться завершені рейси, витрати, платежі та помісячна аналітика."
+            .Font.Color = RGB(66, 101, 90)
+            .Interior.Color = RGB(245, 250, 247)
+            .Font.Size = 11
+            .WrapText = True
+            .VerticalAlignment = xlCenter
+        End With
+    End If
 
     refreshStage = "13 / KPI current"
     KpiCard live, 1, "АКТИВНІ РЕЙСИ", CStr(active)
