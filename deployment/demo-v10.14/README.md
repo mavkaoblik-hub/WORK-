@@ -1,27 +1,37 @@
-# Demo v10.14 — live operations and archive analytics
+# Transport Center DEMO v10.14 — offline installer
 
-**Development branch:** `feature/v10.14-operational-analytics`.
+**Status:** source-validated test release. The actual execution of VBA on customer Excel LTSC remains to be confirmed. The ZIP is generated in GitHub Actions and can be downloaded as an artifact.
 
-This version keeps the v10.13 detailed PDF engine while extending the v10.12 current-state/archive VBA module. **It is not a compiled or Excel-verified XLSM.** GitHub Actions performs source-level checks only.
+## ZIP content and deployment
 
-## What changes
-- **Поточний стан:** financial snapshot of trips with status `У рейсі`; explicitly separates *planned* USD revenue from *recorded* USD expense. It is not booked profit.
-- **Поточний стан:** attention signals for missing odometer, at least 14 days underway, or recorded expenses exceeding planned revenue.
-- **Архів рейсів:** completion-month revenue, all linked trip expenses, received payments, outstanding amount, actual mileage, margin and totals, plus an optional chart.
-- Archive monthly expense attribution follows the **completion month** of the trip. PDF v10.13 expense details are instead assigned by **receipt/transaction date**. Thus monthly results across the two views intentionally differ.
-- Chart deletion is performed on refresh to prevent old charts stacking up.
+The entire `Transport_Center_DEMO_v10.14.zip` is **self-contained for a synthetic test**, including all VBA modules, the v10.12 installation engine, v10.13 detailed report module, v10.14 operational screen module, 114-route catalogue in installer format, 75 fictional trips and 259 fictional expense records.
 
-## Building on Windows
-1. Check out this branch to a local directory.
-2. Supply the original `Транспортний_центр_v8_робочий_Times_New_Roman.xlsx` outside the public repository.
-3. Supply a **synthetic-only** JSON fixture with `format = TRANSPORT_DEMO_SEED_V1`; do not upload customer transactions or personal driver data.
-4. Run:
-   ```powershell
-   .\deployment\demo-v10.14\BUILD_PACKAGE.ps1 -SourceWorkbook "C:\local\source.xlsx" -DemoSeedJson "C:\local\demo_seed.json"
-   ```
-5. In the resulting `_build_v10.14` directory run `START_INSTALL.cmd` in Windows with a licensed desktop Microsoft Excel and VBA project access temporarily enabled for installation.
-6. Test opening/closing with another Excel workbook already open (ribbon should be restored), financial totals, blank datasets, monthly reconciliation, charts and PDF. Back up any real data separately.
+1. Download the artifact from the **Build installable demo ZIP v10.14** workflow run.
+2. Extract its inner `Transport_Center_DEMO_v10.14.zip` and unpack that ZIP into a **new, separate folder**.
+3. On Windows with desktop Microsoft Excel, close all Excel windows and run `START_INSTALL.cmd`.
+4. First launch creates a minimal, entirely synthetic `Транспортний_центр_v8_робочий_Times_New_Roman.xlsx` with Excel COM. It then invokes the unchanged compatible demo installer.
+5. Temporarily allow Excel Trust access to VBA project object model for this installation if requested; disable it afterwards.
+6. Open the created `Транспортний_центр.xlsm`; verify ribbons restore when switching to another workbook and on close, monthly archive, current state, finance PDF, and expense details.
 
-**Important:** The installer inherits the existing demo-v10.12 offline build process. Its `DEMO_SEED.ps1` expects the full compatible seeded dataset. The packaging script validates the format and required paths but does not claim that arbitrary seeds will pass the older fixture validation. **Do not overwrite an existing XLSM**; the installer intentionally refuses.
+**Windows PowerShell 5.1:** scripts containing Ukrainian worksheet names must be UTF-8 **with BOM**. The portable `CREATE_DEMO_BASE.ps1` is stored accordingly.
 
-Run `python tests/check_v114_demo.py` to perform static contract checks. No PowerShell or Excel execution has been performed here.
+The ZIP is strictly a demonstration — it must not be used with production data or as a replacement for a user's previous accounting workbook. No unattended GitHub downloads occur during installation or workbook use. Only the explicit NBP refresh button may request FX data.
+
+## Analytics
+
+- **Поточний стан:** comparison of *planned* earnings and recorded cost for in-progress trips; missing odometer, 14+ days and overspend indicators.
+- **Архів рейсів:** completion-month revenue, all linked expenses, payments, outstanding balance, mileage, margins, and trend chart.
+- **PDF:** v10.13 receipts ledger and monthly breakdown continue unchanged.
+
+**Important:** archive expense allocation uses the trip's completion month, while PDF expense reporting uses each receipt's date. Those are two intentionally different metrics.
+
+## Developer build
+
+Use Python 3 (standard library only):
+
+```shell
+python3 deployment/demo-v10.14/ASSEMBLE_PACKAGE.py --out dist/Transport_Center_DEMO_v10.14.zip
+python3 tests/check_v114_demo.py
+```
+
+Or run `BUILD_PACKAGE.ps1` (Python 3 required only when rebuilding locally). An Excel license is not required to assemble the ZIP. It *is* required to install and execute it.
