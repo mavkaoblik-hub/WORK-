@@ -148,7 +148,7 @@ jobs:
             if(-not $installer.Contains($wanted)) {throw ('Demo installer missing: '+$wanted)}
           }
           foreach($wanted in @('TRANSPORT_DEMO_SEED_V1','demo.drivers','demo.vehicles','demo.trip','DEMO date row',
-              'TC_Рейси','TC_Витрати','Курси валют','demo.trips','demo.expenses',
+              'DemoText $trips','DemoText $spend','demo.trips','demo.expenses',
               '$tripIndex -ne 75','$idx -ne 259','$template.Copy($endMark)')) {
             if(-not $seed.Contains($wanted)) {throw ('Demo source missing: '+$wanted)}
           }
