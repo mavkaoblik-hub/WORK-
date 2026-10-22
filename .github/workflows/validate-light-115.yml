@@ -4,11 +4,13 @@ on:
     branches:
       - feature/v10.15-light-dashboard
       - feature/v10.15.1-light-polish
+      - feature/v10.15.2-light-layout
   pull_request:
     paths:
       - 'deployment/light-v10.15/**'
       - 'deployment/demo-v10.14/TransportWorkbookEvents.txt'
       - 'tests/check_light_115.py'
+      - 'tests/check_light_1152.py'
       - '.github/workflows/validate-light-115.yml'
   workflow_dispatch:
 permissions:
@@ -19,7 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify light UI and clean ledger
-        run: python3 tests/check_light_115.py
+        run: |
+          python3 tests/check_light_115.py
+          python3 tests/check_light_1152.py
   powershell:
     runs-on: windows-latest
     steps:
