@@ -19,6 +19,8 @@ jobs:
         run: python3 tests/check_project.py
       - name: Verify v10.6 modal list lifetime and modes
         run: python3 tests/check_v106_modal.py
+      - name: Verify empty ComboBox IDs in v10.7
+        run: python3 tests/check_v107_empty_id.py
 
 # This workflow deliberately does not execute VBA or Excel.
 # Full Excel COM tests require a separately provisioned Windows runner
