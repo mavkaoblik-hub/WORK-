@@ -1,3 +1,14 @@
+## v10.14.4 — Windows launcher Unicode repair (22.10.2026)
+
+Observed on Windows CMD: garbled Ukrainian XLSX/XLSM names caused `'...is not recognized as an internal or external command'`, followed by `XLSM already exists` on a reused folder. This was a **launcher codepage failure**, unrelated to the status/archival VBA error 91.
+
+The updated `START_INSTALL.cmd` is strictly ASCII and performs **no checks on Cyrillic filenames**. It delegates to `BOOTSTRAP_INSTALL.ps1` saved as UTF-8 with BOM for PowerShell 5.1. PowerShell performs the XLSX existence check, ensures the existing XLSM is NEVER overwritten, invokes the strict diagnostic Excel installer, and emits `BOOTSTRAP_ERROR.txt` on startup failure.
+
+For a FULL archive, use `ASSEMBLE_PACKAGE.py --base-workbook <verified-synthetic.xlsx> --require-base`. GitHub Actions still publishes **source-only** ZIPs (no prebuilt XLSX) and must not label them as end-user FULL installers. The FULL ZIP delivered in chat uses the verified synthetic base XLSX.
+
+**Mandatory test:** extract v10.14.4 in a **fresh folder**; do not reuse a folder containing v10.14.2/3 output. The previous Excel LTSC VBA runtime error 91 is separately under investigation, with v10.14.3 stage diagnostics retained.
+
+---
 ## v10.14.3: Excel LTSC Run-time error 91 diagnostic
 
 During the user’s v10.14.2 installation, `TransportStatusFX.TC_RefreshBoth` failed with "Object variable or With block variable not set" at its error-rethrow handler. That highlighted line did **not** identify the original failing statement.
