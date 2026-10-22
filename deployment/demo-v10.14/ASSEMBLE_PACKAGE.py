@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
-PREFIX="Транспортний_центр_DEMO_v10.14.5"
+PREFIX="Транспортний_центр_DEMO_v10.14.6"
 FILES={
  "deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1":"INSTALL_OFFLINE.ps1",
  "deployment/demo-v10.10/DEMO_SEED.ps1":"DEMO_SEED.ps1",
@@ -20,7 +20,7 @@ FILES={
  "deployment/offline-v10.9/TransportApp.bas":"vba/TransportApp.bas",
  "deployment/demo-v10.13/TransportInsights.bas":"vba/TransportInsights.bas",
  "deployment/demo-v10.14/TransportStatusFX.bas":"vba/TransportStatusFX.bas",
- "deployment/demo-v10.12/TransportWorkbookEvents.txt":"vba/TransportWorkbookEvents.txt",
+ "deployment/demo-v10.14/TransportWorkbookEvents.txt":"vba/TransportWorkbookEvents.txt",
 }
 INSTALL_CMD=r"""@echo off
 setlocal
@@ -28,7 +28,7 @@ REM ASCII-only launcher; Unicode filenames belong in BOOTSTRAP_INSTALL.ps1.
 pushd "%~dp0"
 if errorlevel 1 goto location_error
 echo.
-echo Transport Center DEMO v10.14.5 - Windows Excel offline installer
+echo Transport Center DEMO v10.14.6 - Windows Excel offline installer
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\BOOTSTRAP_INSTALL.ps1"
 set "INSTALL_EXIT=%ERRORLEVEL%"
@@ -150,6 +150,12 @@ def main():
             assert f"{PREFIX}/data/demo_seed.json" in names
             assert f"{PREFIX}/vba/TransportStatusFX.bas" in names
             assert f"{PREFIX}/vba/TransportInsights.bas" in names
+            assert f"{PREFIX}/vba/TransportWorkbookEvents.txt" in names
+            fx_module=z.read(f"{PREFIX}/vba/TransportStatusFX.bas").decode("utf-8-sig")
+            events=z.read(f"{PREFIX}/vba/TransportWorkbookEvents.txt").decode("utf-8-sig")
+            assert "detailRegion.Value2 = detailValues" in fx_module
+            assert "monthlyHeader = Application.Max(20" in fx_module
+            assert "Private mStatusLastRefresh As Date" in events
             if base is not None:
                 assert f"{PREFIX}/Транспортний_центр_v8_робочий_Times_New_Roman.xlsx" in names
         digest=hashlib.sha256(out.read_bytes()).hexdigest()
