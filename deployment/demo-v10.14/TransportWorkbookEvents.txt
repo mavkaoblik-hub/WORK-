@@ -97,14 +97,20 @@ Private Sub Workbook_SheetActivate(ByVal Sh As Object)
 QuietExit:
 End Sub
 
+' Called by the explicit Refresh button as well as Workbook_Open.
+Public Sub TC_DashboardRendered()
+    mStatusLastRefresh = Now
+    mStatusDirty = False
+    mStatusRefreshWarned = False
+End Sub
+
 Private Sub RefreshStatusIfRequired(ByVal fromOpen As Boolean)
     Dim oldEvents As Boolean, oldUpdating As Boolean
     If mStatusRefreshBusy Then Exit Sub
-    ' Avoid two complete dashboard builds during rapid archive/current tab changes.
-    ' Bound possible stale state to 20 seconds when a macro disables sheet events.
+    ' Rebuild only after ledger edits, workbook open, or day rollover.
     If Not fromOpen And Not mStatusDirty Then
         If mStatusLastRefresh > 0 Then
-            If DateDiff("s", mStatusLastRefresh, Now) < 20 Then Exit Sub
+            If DateValue(mStatusLastRefresh) = Date Then Exit Sub
         End If
     End If
     mStatusRefreshBusy = True
@@ -114,9 +120,7 @@ Private Sub RefreshStatusIfRequired(ByVal fromOpen As Boolean)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     TransportStatusFX.TC_RefreshBoth
-    mStatusLastRefresh = Now
-    mStatusDirty = False
-    mStatusRefreshWarned = False
+    TC_DashboardRendered
     If fromOpen Then
         ThisWorkbook.Worksheets("Зміст").Activate
     Else
