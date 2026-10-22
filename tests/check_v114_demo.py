@@ -34,7 +34,7 @@ print('PASS: v10.14 operational analytics and offline package dependency contrac
 print('NOTE: Excel LTSC COM and VBA execution are NOT verified by this test.')
 
 # v10.14.3: original error number/stage must survive; charts non-fatal.
-assert s.count('refreshStage = "') == 26
+assert s.count('refreshStage = "') == 27
 assert 'sourceError = Err.Number' in s and 'sourceText = Err.Description' in s
 assert 'TC_STATUS_FAILED' in s and 'errorText = "ЕТАП "' in s
 inst=Path('deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1').read_text(encoding='utf-8-sig')
@@ -66,3 +66,19 @@ persist_pos=source_inst.index("$book.Save()")
 assert save_pos < macro_pos < persist_pos, "VBA must run in saved XLSM"
 assert source_inst.index("if (-not $refreshReady)") > persist_pos, "failure must be reported after saving diagnostics"
 print("PASS: saved XLSM lifecycle and currency fallback/error stages")
+
+# v10.14.6: readable UI, bounded Excel operations, single-pass expense ledger.
+assert 'reportArea.Clear' in s and 'sheet.Cells.Clear' not in s
+assert 'With reportArea.Font' in s and 'sheet.Cells.Font' not in s
+assert 'detailRegion.Value2 = detailValues' in s
+assert s.count('For er = ROW0 To Last(expenses, 2)') == 1
+assert 'DisplayCategory(categoryText, id)' in s
+assert 'lastMonthlyRow = ArchiveMonthlyTable(history, monthlyHeader, trips, byTrip)' in s
+assert 'ActiveFinancialSnapshot live, Application.Max(20' in s
+assert 'Application.ScreenUpdating = oldUpdating' in s
+events=Path('deployment/demo-v10.14/TransportWorkbookEvents.txt').read_text(encoding='utf-8-sig')
+assert 'mStatusLastRefresh As Date' in events
+assert 'Workbook_SheetChange(ByVal Sh As Object' in events
+assert 'DateDiff("s", mStatusLastRefresh, Now) < 20' in events
+assert 'Private Sub RibbonRestore()' in events and 'Workbook_BeforeClose(Cancel As Boolean)' in events
+print('PASS: v10.14.6 compact reports, batch receipts, fresh monthly insights, 20s cache and ribbon restore')
