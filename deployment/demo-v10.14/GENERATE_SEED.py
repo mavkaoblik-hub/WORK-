@@ -20,8 +20,8 @@ def currency(amount):
 def distribute(target, count, rng, variation):
     base=target//count
     shifts=[rng.randint(-variation, variation) for _ in range(count)]
-    bias=sum(shifts)
-    result=[base + x for x in shifts]
+    mean_shift=sum(shifts)//count
+    result=[base + x - mean_shift for x in shifts]
     result[-1]+=target - sum(result)
     assert sum(result) == target and min(result)>0
     return result
