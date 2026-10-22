@@ -1033,16 +1033,24 @@ Failed:
     MsgBox "Курси не оновлено: " & Err.Description, vbExclamation
 End Sub
 
-Public Function TC_USDFrom(ByVal amount As Double, ByVal currency As String) As Double
+' NOTE: Currency is a VBA reserved data type. Never use "currency" as a parameter name.
+' Public procedure names/argument order remain unchanged for TransportApp callers.
+Public Function TC_USDFrom(ByVal amount As Double, ByVal currencyCode As String) As Double
     Dim baseUsd As Double, quote As Double
-    currency = UCase$(Trim$(currency))
-    If currency = "USD" Then TC_USDFrom = amount: Exit Function
+    currencyCode = UCase$(Trim$(currencyCode))
+    If currencyCode = "USD" Then
+        TC_USDFrom = amount
+        Exit Function
+    End If
     baseUsd = Rate("USD")
-    quote = Rate(currency)
-    If baseUsd <= 0 Or quote <= 0 Then Err.Raise vbObjectError + 3320, , "Для " & currency & " потрібні курси USD/PLN і " & currency & "/PLN на аркуші Курси валют."
+    quote = Rate(currencyCode)
+    If baseUsd <= 0 Or quote <= 0 Then
+        Err.Raise vbObjectError + 3320, "TransportStatusFX.TC_USDFrom", _
+            "Для " & currencyCode & " потрібні курси USD/PLN і " & currencyCode & "/PLN на аркуші Курси валют."
+    End If
     TC_USDFrom = Round(amount * quote / baseUsd, 2)
 End Function
 
-Public Function TC_PLNPerUnit(ByVal currency As String) As Double
-    TC_PLNPerUnit = Rate(UCase$(Trim$(currency)))
+Public Function TC_PLNPerUnit(ByVal currencyCode As String) As Double
+    TC_PLNPerUnit = Rate(UCase$(Trim$(currencyCode)))
 End Function
