@@ -17,6 +17,11 @@ required = [
 ]
 for tag in required: assert tag in s, tag
 assert s.count('Public Sub TC_RefreshBoth()') == 1
+assert "Private Function Equivalent(" not in s, "Old FX helper can break compilation on Excel LTSC"
+assert " = Equivalent(" not in s, "FinancialFooter must call the stable public FX converter"
+assert s.count("Public Function TC_EquivalentUSD(") == 1
+assert s.count("= TC_EquivalentUSD(") >= 3
+assert "targetRate = Rate(targetISO)" in s
 for kind in ['Sub','Function']:
     n1=len(re.findall(r'^\s*(?:(?:Public|Private|Friend)\s+)?'+kind+r'\s+\w+\s*\(',s,re.M))
     n2=len(re.findall(r'^\s*End '+kind+r'\s*$',s,re.M))
