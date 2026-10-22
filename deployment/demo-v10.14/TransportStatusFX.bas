@@ -243,19 +243,33 @@ Private Sub DriverOverview(ByVal sheet As Worksheet, ByVal people As Object, ByV
     On Error GoTo 0
 End Sub
 
+' A missing/unreadable REFERENCE exchange rate must NEVER invalidate USD ledger.
+' Excel LTSC previously raised error 91 while rendering the archive FX footer.
 Private Function Rate(ByVal iso As String) As Double
-    Dim w As Worksheet, row As Long
-    If iso = "PLN" Then Rate = 1: Exit Function
-    Set w = W("Курси валют")
-    Select Case UCase$(iso)
-        Case "USD": row = 7
-        Case "EUR": row = 8
-        Case "UAH": row = 9
+    Dim fxSheet As Worksheet, fxRow As Long, q As Variant
+    If UCase$(Trim$(iso)) = "PLN" Then
+        Rate = 1#
+        Exit Function
+    End If
+    Select Case UCase$(Trim$(iso))
+        Case "USD": fxRow = 7
+        Case "EUR": fxRow = 8
+        Case "UAH": fxRow = 9
         Case Else: Exit Function
     End Select
-    If IsNumeric(w.Cells(row, 2).Value2) Then
-        If CDbl(w.Cells(row, 2).Value2) > 0 Then Rate = CDbl(w.Cells(row, 2).Value2)
-    End If
+    On Error GoTo RateUnavailable
+    Set fxSheet = ThisWorkbook.Worksheets("Курси валют")
+    If fxSheet Is Nothing Then GoTo RateUnavailable
+    q = fxSheet.Cells(fxRow, 2).Value2
+    If IsError(q) Or IsEmpty(q) Or IsNull(q) Then Exit Function
+    If Not IsNumeric(q) Then Exit Function
+    If CDbl(q) > 0# Then Rate = CDbl(q)
+    Exit Function
+RateUnavailable:
+    ' Missing rate appears as "немає курсу"; real revenue/expense sums survive.
+    Debug.Print "TC_FX_RATE_UNAVAILABLE: " & iso & "; " & Err.Number & "; " & Err.Description
+    Rate = 0#
+    Err.Clear
 End Function
 
 ' USD is the accounting ledger currency; PLN/EUR/UAH are display equivalents.
@@ -323,15 +337,24 @@ End Function
 
 Private Sub FinancialFooter(ByVal sheet As Worksheet, ByVal line As Long, ByVal caption As String, ByVal revenueUSD As Double, ByVal costUSD As Double)
     Dim currencies As Variant, i As Long, fx As String
+    Dim footerStep As String, originalNo As Long, originalText As String
+    If sheet Is Nothing Then Err.Raise vbObjectError + 3370, "FinancialFooter", "Не передано аркуш валютного підсумку"
+    On Error GoTo FooterFailed
+    footerStep = "header"
     Bar sheet, line, caption
     line = line + 1
+    footerStep = "currency table headers"
     TableLabels sheet, line, Array("Валюта", "ДОХІД", "ВИТРАТИ", "РЕЗУЛЬТАТ", "Перерахунок", "", "", "", "", "", "", "")
     currencies = Array("PLN", "USD", "EUR", "UAH")
     For i = 0 To 3
+        footerStep = "currency " & CStr(i)
         fx = CStr(currencies(i))
         sheet.Cells(line + 1 + i, 1).Value = fx
+        footerStep = fx & ": revenue"
         sheet.Cells(line + 1 + i, 2).Value = TC_EquivalentUSD(revenueUSD, fx)
+        footerStep = fx & ": expense"
         sheet.Cells(line + 1 + i, 3).Value = TC_EquivalentUSD(costUSD, fx)
+        footerStep = fx & ": result"
         sheet.Cells(line + 1 + i, 4).Value = TC_EquivalentUSD(revenueUSD - costUSD, fx)
         If fx = "USD" Then
             sheet.Cells(line + 1 + i, 5).Value = "Облікова валюта"
@@ -341,6 +364,7 @@ Private Sub FinancialFooter(ByVal sheet As Worksheet, ByVal line As Long, ByVal 
         Stripe sheet, line + i + 1
         sheet.Cells(line + 1 + i, 1).Font.Bold = True
     Next i
+    footerStep = "explanatory note"
     With sheet.Range(sheet.Cells(line + 6, 1), sheet.Cells(line + 6, 12))
         .Merge
         .Value = "Дохід: нарахування завершених рейсів; витрати: фактичні записи. Курс показує еквівалент, а не додатковий прибуток. Історичні витрати в USD зафіксовані при внесенні."
@@ -348,6 +372,13 @@ Private Sub FinancialFooter(ByVal sheet As Worksheet, ByVal line As Long, ByVal 
         .WrapText = True
         .RowHeight = 38
     End With
+    Exit Sub
+FooterFailed:
+    originalNo = Err.Number
+    originalText = Err.Description
+    Debug.Print "TC_FINANCIAL_FOOTER_ERROR: " & footerStep & "; " & CStr(originalNo) & "; " & originalText
+    Err.Raise vbObjectError + 3371, "FinancialFooter", _
+        "Крок [" & footerStep & "]; первинна помилка " & CStr(originalNo) & ": " & originalText
 End Sub
 
 
