@@ -10,11 +10,12 @@ import zipfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
-PREFIX="Транспортний_центр_DEMO_v10.14"
+PREFIX="Транспортний_центр_DEMO_v10.14.4"
 FILES={
  "deployment/demo-v10.14/INSTALL_DIAGNOSTIC.ps1":"INSTALL_OFFLINE.ps1",
  "deployment/demo-v10.10/DEMO_SEED.ps1":"DEMO_SEED.ps1",
  "deployment/demo-v10.14/CREATE_DEMO_BASE.ps1":"CREATE_DEMO_BASE.ps1",
+ "deployment/demo-v10.14/BOOTSTRAP_INSTALL.ps1":"BOOTSTRAP_INSTALL.ps1",
  "vba/TransportCenter.bas":"vba/TransportCenter.bas",
  "deployment/offline-v10.9/TransportApp.bas":"vba/TransportApp.bas",
  "deployment/demo-v10.13/TransportInsights.bas":"vba/TransportInsights.bas",
@@ -22,29 +23,31 @@ FILES={
  "deployment/demo-v10.12/TransportWorkbookEvents.txt":"vba/TransportWorkbookEvents.txt",
 }
 INSTALL_CMD=r"""@echo off
-chcp 65001 >nul
-cd /d "%~dp0"
+setlocal
+REM ASCII-only launcher; Unicode filenames belong in BOOTSTRAP_INSTALL.ps1.
+pushd "%~dp0"
+if errorlevel 1 goto location_error
 echo.
-echo TRANSPORT CENTER v10.14 - SYNTHETIC DEMO
-echo All transactions are fictional. Microsoft Excel for Windows is required.
+echo Transport Center DEMO v10.14.4 - Windows Excel offline installer
 echo.
-if not exist "Транспортний_центр_v8_робочий_Times_New_Roman.xlsx" (
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0CREATE_DEMO_BASE.ps1"
-  if errorlevel 1 goto error
-)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0INSTALL_OFFLINE.ps1"
-if errorlevel 1 goto error
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\BOOTSTRAP_INSTALL.ps1"
+set "INSTALL_EXIT=%ERRORLEVEL%"
+popd
+if not "%INSTALL_EXIT%"=="0" goto installation_error
 echo.
-echo DONE. Open "Транспортний_центр.xlsm" and enable local trusted macros.
-echo Test: Current state, Archive, Finance report, closing/reopening Excel.
-echo.
+echo Installation script finished. Check the generated workbook in this folder.
 pause
 exit /b 0
-:error
+:installation_error
 echo.
-echo INSTALL FAILED. See INSTALL_ERROR.txt if created. Preserve the source book.
+echo INSTALLATION FAILED - see BOOTSTRAP_ERROR.txt, INSTALL_ERROR.txt or VBA_SMOKE_TEST_FAILED.txt.
+echo Existing XLSM workbooks are NEVER overwritten.
 pause
-exit /b 1
+exit /b %INSTALL_EXIT%
+:location_error
+echo ERROR: Cannot open the extracted installation directory.
+pause
+exit /b 2
 """
 README="""ТРАНСПОРТНИЙ ЦЕНТР v10.14 — ТЕСТОВА ОФЛАЙН-ЗБІРКА
 22.10.2026 | УСІ ДАНІ ПОВНІСТЮ ВИГАДАНІ
@@ -138,6 +141,12 @@ def main():
             assert z.testzip() is None
             names=set(z.namelist())
             assert f"{PREFIX}/START_INSTALL.cmd" in names
+            assert f"{PREFIX}/BOOTSTRAP_INSTALL.ps1" in names
+            launcher=z.read(f"{PREFIX}/START_INSTALL.cmd")
+            if not launcher.isascii():
+                raise RuntimeError("CMD must remain ASCII-only, all Unicode paths must be handled in PowerShell")
+            if b"BOOTSTRAP_INSTALL.ps1" not in launcher:
+                raise RuntimeError("CMD is not delegated to Unicode-safe PowerShell bootstrap")
             assert f"{PREFIX}/data/demo_seed.json" in names
             assert f"{PREFIX}/vba/TransportStatusFX.bas" in names
             assert f"{PREFIX}/vba/TransportInsights.bas" in names
