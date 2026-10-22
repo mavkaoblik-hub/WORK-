@@ -5,6 +5,7 @@ Option Explicit
 ' No Workbook_Open handlers, timers, recalculation hooks or background HTTP.
 ' Bookkeeping base: USD. Other currencies are reference equivalents at rates shown in "Курси валют".
 Private Const ROW0 As Long = 6
+Private mPageLayoutConfigured As Boolean 'PageSetup may invoke a printer driver; configure once per Excel session
 
 Private Function W(ByVal sheetName As String) As Worksheet
     Set W = ThisWorkbook.Worksheets(sheetName)
@@ -892,10 +893,15 @@ Public Sub TC_RefreshBoth()
     If detailLine > detailStart + 2 Then history.Range("B" & (detailStart + 2) & ":B" & (detailLine - 1)).NumberFormat = "dd.mm.yyyy"
     live.Range("L11:L" & Application.Max(activeLine, liveTotalsAt + 25)).WrapText = True
     history.Range("L11:L" & Application.Max(detailLine, archiveFinanceEnd + 5)).WrapText = True
-    live.PageSetup.Orientation = xlLandscape
-    history.PageSetup.Orientation = xlLandscape
-    live.PageSetup.Zoom = False: live.PageSetup.FitToPagesWide = 1
-    history.PageSetup.Zoom = False: history.PageSetup.FitToPagesWide = 1
+    ' Printer communication can dominate refresh time on remote/default printers.
+    ' Print layout is book-local and only needs preparation once per Excel session.
+    If Not mPageLayoutConfigured Then
+        live.PageSetup.Orientation = xlLandscape
+        history.PageSetup.Orientation = xlLandscape
+        live.PageSetup.Zoom = False: live.PageSetup.FitToPagesWide = 1
+        history.PageSetup.Zoom = False: history.PageSetup.FitToPagesWide = 1
+        mPageLayoutConfigured = True
+    End If
     On Error GoTo Failed
     Application.ScreenUpdating = oldUpdating
     Application.EnableEvents = oldEvents
