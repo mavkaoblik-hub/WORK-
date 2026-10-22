@@ -87,9 +87,13 @@ End Function
 
 Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As String)
     Dim i As Long
+    ' Chart objects are presentation-only and must never block ledger rendering.
+    On Error Resume Next
     For i = sheet.ChartObjects.Count To 1 Step -1
         sheet.ChartObjects(i).Delete
     Next i
+    Err.Clear
+    On Error GoTo 0
     sheet.UsedRange.UnMerge
     sheet.Cells.Clear
     sheet.Cells.Font.Name = "Times New Roman"
@@ -563,10 +567,15 @@ Public Sub TC_RefreshBoth()
     Dim monthlyHeader As Long, lastMonthlyRow As Long, archiveFinanceEnd As Long
     Dim incomeFinished As Double, expenseAll As Double, expenseFinished As Double
     Dim planStart As Variant, actualEnd As Variant, cost As Double, total As Double
+    Dim refreshStage As String, sourceError As Long, sourceText As String, errorSource As String
+    Dim sourceLine As Long, errorText As String
+    refreshStage = "01 / sheets"
     On Error GoTo Failed
     Set trips = W("TC_Рейси"): Set expenses = W("TC_Витрати")
     Set live = W("Поточний стан"): Set history = W("Архів рейсів")
+    refreshStage = "02 / driver and route catalogues"
     Set persons = Drivers(): Set paths = Routes()
+    refreshStage = "03 / dictionary initialization"
     Set byTrip = CreateObject("Scripting.Dictionary")
     Set categoryTrip = CreateObject("Scripting.Dictionary")
     Set stateOf = CreateObject("Scripting.Dictionary")
@@ -583,6 +592,7 @@ Public Sub TC_RefreshBoth()
     Set driverIncome = CreateObject("Scripting.Dictionary")
     Set driverCostAll = CreateObject("Scripting.Dictionary")
     Set driverCostDone = CreateObject("Scripting.Dictionary")
+    refreshStage = "04 / map trip ownership"
     tripDriver.CompareMode = vbTextCompare
     For tr = ROW0 To Last(trips, 1)
         id = S(trips.Cells(tr, 1).Value2)
@@ -592,6 +602,7 @@ Public Sub TC_RefreshBoth()
             If driver <> "" And Not persons.Exists(driver) Then persons(driver) = driver
         End If
     Next tr
+    refreshStage = "05 / aggregate recorded expenses"
     For er = ROW0 To Last(expenses, 2)
         id = S(expenses.Cells(er, 2).Value2)
         If id <> "" Then
@@ -606,18 +617,23 @@ Public Sub TC_RefreshBoth()
         End If
     Next er
 
+    refreshStage = "06 / render live header"
     Header live, "ПОТОЧНИЙ СТАН", "активні рейси та їх фактичні витрати"
+    refreshStage = "07 / render archive header"
     Header history, "АРХІВ РЕЙСІВ", "завершені рейси; середня тривалість та структура витрат"
+    refreshStage = "08 / company heading"
     Bar live, 5, "ОГЛЯД КОМПАНІЇ  |  автоматичне оновлення при відкритті аркуша"
     Bar history, 5, "ОГЛЯД АРХІВУ  |  лише завершені рейси"
     Bar live, 10, "ВОДІЇ КОМПАНІЇ  |  рейси, пробіг, дохід, витрати та рентабельність"
     Bar history, 10, "ЕФЕКТИВНІСТЬ ВОДІЇВ  |  виконані рейси та їх фінансові результати"
     ' Leave enough space for any number of drivers; never overwrite the trip table.
+    refreshStage = "09 / section layout"
     tripSectionRow = Application.Max(18, 14 + persons.Count)
     Bar live, tripSectionRow, "АКТИВНІ РЕЙСИ  |  фактичні дані станом на сьогодні"
     Bar history, tripSectionRow, "ЗАВЕРШЕНІ РЕЙСИ  |  повний перелік"
     TableLabels live, tripSectionRow + 2, Array("Рейс ID", "Водій", "Маршрут", "Авто", "Виїзд", "Днів", "Км план", "Км факт зараз", "Витрати USD", "Дохід план USD", "Статус", "На що витрачено (USD)")
     TableLabels history, tripSectionRow + 2, Array("Рейс ID", "Водій", "Маршрут", "Авто", "Виїзд", "Прибуття", "Днів", "Км факт", "Витрати USD", "Дохід USD", "Результат USD", "Структура витрат (USD)")
+    refreshStage = "10 / trip details"
     activeLine = tripSectionRow + 3: archiveLine = tripSectionRow + 3
     For tr = ROW0 To Last(trips, 1)
         id = S(trips.Cells(tr, 1).Value2)
@@ -685,13 +701,17 @@ Public Sub TC_RefreshBoth()
     Next tr
     If active = 0 Then live.Cells(tripSectionRow + 3, 1).Value = "Активних рейсів немає": activeLine = tripSectionRow + 4
     If completed = 0 Then history.Cells(tripSectionRow + 3, 1).Value = "Завершених рейсів немає": archiveLine = tripSectionRow + 4
+    refreshStage = "11 / driver overview live"
     DriverOverview live, persons, 12, driverCompleted, driverActive, driverKm, driverDays, driverIncome, driverCostAll, False
+    refreshStage = "12 / driver overview archive"
     DriverOverview history, persons, 12, driverCompleted, driverActive, driverKm, driverDays, driverIncome, driverCostDone, True
 
+    refreshStage = "13 / KPI current"
     KpiCard live, 1, "АКТИВНІ РЕЙСИ", CStr(active)
     KpiCard live, 4, "ЗАВЕРШЕНО", CStr(completed)
     KpiCard live, 7, "ЗАПЛАНОВАНО", CStr(planned)
     KpiCard live, 10, "ВИТРАТИ, USD", Format$(expenseAll, "#,##0.00")
+    refreshStage = "14 / KPI archive"
     KpiCard history, 1, "ЗАВЕРШЕНО РЕЙСІВ", CStr(completed)
     If completed > 0 Then
         KpiCard history, 4, "СЕРЕДНЯ ТРИВАЛІСТЬ", Format$(durationSum / completed, "0.0") & " дн."
@@ -701,11 +721,13 @@ Public Sub TC_RefreshBoth()
     KpiCard history, 7, "ДОХІД, USD", Format$(incomeFinished, "#,##0.00")
     KpiCard history, 10, "ВИТРАТИ, USD", Format$(expenseFinished, "#,##0.00")
 
+    refreshStage = "15 / detailed archive layout"
     archiveStart = Application.Max(archiveLine + 2, tripSectionRow + 7)
     Bar history, archiveStart, "ПІДСУМОК АРХІВУ  |  завершено: " & completed & "  |  середня тривалість: " & IIf(completed > 0, Format$(durationSum / Application.Max(1, completed), "0.0"), "—") & " днів"
     detailStart = archiveStart + 3
     Bar history, detailStart, "ДЕТАЛІ ВИТРАТ У ЗАВЕРШЕНИХ РЕЙСАХ"
     TableLabels history, detailStart + 1, Array("Рейс ID", "Дата витрати", "Категорія", "Паркінг", "Сума", "Валюта", "Курс зафіксовано", "USD у журналі", "", "", "", "Коментар")
+    refreshStage = "16 / detailed expense archive"
     detailLine = detailStart + 2
     For er = ROW0 To Last(expenses, 2)
         id = S(expenses.Cells(er, 2).Value2)
@@ -731,24 +753,34 @@ Public Sub TC_RefreshBoth()
         End If
     Next er
     ' Financial summary ends the archive AFTER all transaction records AND category subtotals.
+    refreshStage = "17 / archive categories"
     categoriesEnd = CategoryTotalsTable(history, Application.Max(detailLine + 2, detailStart + 4), _
         "СТРУКТУРА ВИТРАТ  |  лише завершені рейси", byCategoryFinished)
+    refreshStage = "18 / archive currency footer"
     FinancialFooter history, categoriesEnd + 2, "ФІНАНСИ ЗА ЗАВЕРШЕНИМИ РЕЙСАМИ", incomeFinished, expenseFinished
     archiveFinanceEnd = categoriesEnd + 14
 
+    refreshStage = "19 / live totals layout"
     liveTotalsAt = Application.Max(activeLine + 2, tripSectionRow + 7)
     Bar live, liveTotalsAt, "ПІДСУМОК КОМПАНІЇ  |  зараз активних: " & active & "  |  виконано: " & completed & "  |  заплановано: " & planned
+    refreshStage = "20 / live categories"
     categoriesEnd = CategoryTotalsTable(live, liveTotalsAt + 2, "ВИТРАТИ ЗА КАТЕГОРІЯМИ  |  усі зареєстровані рейси", byCategoryAll)
+    refreshStage = "21 / live currency footer"
     FinancialFooter live, categoriesEnd + 2, "ДОХОДИ ЗАВЕРШЕНИХ РЕЙСІВ / ВСІ ЗАРЕЄСТРОВАНІ ВИТРАТИ", incomeFinished, expenseAll
     ' Further operational intelligence lives below the complete ledger tables.
+    refreshStage = "22 / active financial snapshot"
     ActiveFinancialSnapshot live, categoriesEnd + 14, trips, byTrip
+    refreshStage = "23 / active risk indicators"
     ActiveRiskSignals live, categoriesEnd + 20, trips, byTrip, persons
     monthlyHeader = archiveFinanceEnd
+    refreshStage = "24 / archive monthly table"
     lastMonthlyRow = ArchiveMonthlyTable(history, monthlyHeader, trips, byTrip)
+    refreshStage = "25 / archive monthly chart"
     If lastMonthlyRow > 0 Then ArchiveTrendChart history, monthlyHeader, lastMonthlyRow
 
     ' Cosmetic formatting can fail under some Excel LTSC printers/configurations.
     ' Never discard correct ledger data and dashboard merely over a number format.
+    refreshStage = "26 / presentation formats"
     On Error Resume Next
     live.Range("E" & (tripSectionRow + 3) & ":E" & Application.Max(activeLine, tripSectionRow + 3)).NumberFormat = "dd.mm.yyyy"
     history.Range("E" & (tripSectionRow + 3) & ":F" & Application.Max(archiveLine, tripSectionRow + 3)).NumberFormat = "dd.mm.yyyy"
@@ -762,7 +794,19 @@ Public Sub TC_RefreshBoth()
     On Error GoTo Failed
     Exit Sub
 Failed:
-    Err.Raise vbObjectError + 3301, "TransportStatusFX.TC_RefreshBoth", "Не вдалося перерахувати стан та архів: " & Err.Description
+    ' Preserve original error stage and number; the previous handler hid the cause.
+    sourceError = Err.Number
+    sourceText = Err.Description
+    errorSource = Err.Source
+    sourceLine = Erl
+    errorText = "ЕТАП " & refreshStage & "; VBA error " & CStr(sourceError) & _
+        "; line " & CStr(sourceLine) & "; source " & errorSource & "; " & sourceText
+    Debug.Print "TC_STATUS_FAILED: " & errorText
+    On Error Resume Next
+    ThisWorkbook.Worksheets("Поточний стан").Range("N1").Value = errorText
+    ThisWorkbook.Worksheets("Архів рейсів").Range("N1").Value = errorText
+    On Error GoTo 0
+    Err.Raise vbObjectError + 3301, "TransportStatusFX.TC_RefreshBoth", errorText
 End Sub
 
 Public Sub TC_ShowLive()
