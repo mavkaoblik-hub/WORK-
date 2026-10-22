@@ -254,20 +254,24 @@ Private Function Rate(ByVal iso As String) As Double
     End If
 End Function
 
-' USD is the accounting ledger currency; all four visible totals are reference equivalents.
-Private Function Equivalent(ByVal usdAmount As Double, ByVal currency As String) As String
-    Dim usdRate As Double, destinationRate As Double
-    If currency = "USD" Then Equivalent = Format$(usdAmount, "#,##0.00"): Exit Function
-    usdRate = Rate("USD"): destinationRate = Rate(currency)
-    If usdRate <= 0 Or destinationRate <= 0 Then
-        Equivalent = "немає курсу"
-    Else
-        Equivalent = Format$(usdAmount * usdRate / destinationRate, "#,##0.00")
-    End If
-End Function
-
+' USD is the accounting ledger currency; PLN/EUR/UAH are display equivalents.
+' One PUBLIC entry point is used by BOTH reporting modules and the financial footer.
+' Avoid indirect calls through the former local "Equivalent" helper: some LTSC
+' installations stopped compilation at FinancialFooter with "Sub or Function not defined".
 Public Function TC_EquivalentUSD(ByVal usdAmount As Double, ByVal code As String) As String
-    TC_EquivalentUSD = Equivalent(usdAmount, UCase$(Trim$(code)))
+    Dim usdRate As Double, targetRate As Double, targetISO As String
+    targetISO = UCase$(Trim$(code))
+    If targetISO = "USD" Then
+        TC_EquivalentUSD = Format$(usdAmount, "#,##0.00")
+        Exit Function
+    End If
+    usdRate = Rate("USD")
+    targetRate = Rate(targetISO)
+    If usdRate <= 0 Or targetRate <= 0 Then
+        TC_EquivalentUSD = "немає курсу"
+    Else
+        TC_EquivalentUSD = Format$(usdAmount * usdRate / targetRate, "#,##0.00")
+    End If
 End Function
 
 Private Function CategorySummary(ByVal d As Object, ByVal trip As String) As String
@@ -322,9 +326,9 @@ Private Sub FinancialFooter(ByVal sheet As Worksheet, ByVal line As Long, ByVal 
     For i = 0 To 3
         fx = CStr(currencies(i))
         sheet.Cells(line + 1 + i, 1).Value = fx
-        sheet.Cells(line + 1 + i, 2).Value = Equivalent(revenueUSD, fx)
-        sheet.Cells(line + 1 + i, 3).Value = Equivalent(costUSD, fx)
-        sheet.Cells(line + 1 + i, 4).Value = Equivalent(revenueUSD - costUSD, fx)
+        sheet.Cells(line + 1 + i, 2).Value = TC_EquivalentUSD(revenueUSD, fx)
+        sheet.Cells(line + 1 + i, 3).Value = TC_EquivalentUSD(costUSD, fx)
+        sheet.Cells(line + 1 + i, 4).Value = TC_EquivalentUSD(revenueUSD - costUSD, fx)
         If fx = "USD" Then
             sheet.Cells(line + 1 + i, 5).Value = "Облікова валюта"
         Else
