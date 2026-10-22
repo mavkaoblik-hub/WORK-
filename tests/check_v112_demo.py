@@ -25,7 +25,7 @@ assert inst.index("$book.SaveAs($target,52)") < inst.index("$book.Close($false)"
 assert "codeload.github.com" not in inst
 for name,code in [("Insights",rep),("FX",fx),("Events",ev)]:
     for token in ("Sub","Function"):
-        starts=len(re.findall(r"^\\s*(?:Public |Private |Friend )?"+token+r"\\s+\\w+\\s*\\(",code,re.M))
-        ends=len(re.findall(r"^\\s*End "+token+r"\\s*$",code,re.M))
+        starts=len(re.findall(r"^\s*(?:Public |Private |Friend )?"+token+r"\s+\w+\s*\(",code,re.M))
+        ends=len(re.findall(r"^\s*End "+token+r"\s*$",code,re.M))
         assert starts == ends,(name,token,starts,ends)
 print("V10.12 static: detailed reports, driver dashboards, ribbon restore, offline build PASS")
