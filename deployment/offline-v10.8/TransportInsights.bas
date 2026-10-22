@@ -423,7 +423,11 @@ Public Sub TC_GenerateReport(ByVal reportMode As String, ByVal startDate As Date
     Else
         labelPeriod = "За період з " & Format$(startDate, "dd.mm.yyyy") & " по " & Format$(endDate, "dd.mm.yyyy")
     End If
-    If Len(driverFilter) > 0 Then labelPeriod = labelPeriod & " | Водій: " & Friendly(drvNames, driverFilter)
+    If Len(driverFilter) > 0 Then
+        labelPeriod = labelPeriod & " | Водій: " & Friendly(drvNames, driverFilter)
+    Else
+        labelPeriod = labelPeriod & " | Усі водії (компанія)"
+    End If
     If reportMode <> "ALL" And DateDiff("m", startDate, endDate) >= 12 Then labelPeriod = labelPeriod & " | графік за останні 12 місяців"
     w.Range("A3:L3").Merge: w.Range("A3").Value = labelPeriod
     w.Range("A3").Font.Italic = True: w.Rows(3).RowHeight = 26
@@ -435,7 +439,11 @@ Public Sub TC_GenerateReport(ByVal reportMode As String, ByVal startDate As Date
     ReportCard w, "D10:F10", "D11:F12", "У РЕЙСІ НА ДАТУ", CStr(active)
     ReportCard w, "G10:I10", "G11:I12", "ОТРИМАНО, USD", Format$(paid, "#,##0.00")
     ReportCard w, "J10:L10", "J11:L12", "ЛЮДИНО-ДНІ РЕЙСІВ", Format$(totalDays, "#,##0")
-    StyleHeader w, "A15:L15", "ГРАФІКИ КОМПАНІЇ  |  фактичні завершення та витрати за датами операцій"
+    If Len(driverFilter) = 0 Then
+        StyleHeader w, "A15:L15", "ГРАФІКИ КОМПАНІЇ  |  дохід і витрати за датами операцій"
+    Else
+        StyleHeader w, "A15:L15", "ГРАФІКИ ВОДІЯ  |  дохід і витрати за датами операцій"
+    End If
     monthCount = DateDiff("m", DateSerial(Year(startDate), Month(startDate), 1), DateSerial(Year(endDate), Month(endDate), 1)) + 1
     If reportMode = "ALL" Then monthCount = 12
     If monthCount < 1 Then monthCount = 1
@@ -461,7 +469,11 @@ Public Sub TC_GenerateReport(ByVal reportMode As String, ByVal startDate As Date
     End If
     AddChart w, "N3:P" & (monthCount + 3), "A16", "F29", "Нараховано vs витрати (USD)", xlColumnClustered
     AddChart w, "R3:S" & (idx + 3), "G16", "L29", "Структура витрат за категоріями", xlColumnClustered
-    StyleHeader w, "A32:L32", "ПОКАЗНИКИ ЗА ВОДІЯМИ  |  доходи — за завершенням рейсу, витрати — за датою витрати"
+    If Len(driverFilter) = 0 Then
+        StyleHeader w, "A32:L32", "ПОКАЗНИКИ ЗА ВСІМА ВОДІЯМИ  |  порівняльна таблиця"
+    Else
+        StyleHeader w, "A32:L32", "ПОКАЗНИКИ ВИБРАНОГО ВОДІЯ  |  персональні результати"
+    End If
     TableHeader w, 33, Array("Водій ID", "ПІБ", "Завершено", "У рейсі", "Км факт", "Днів", "Дохід USD", "Отримано USD", "Витрати USD", "Результат USD", "Витрати/км", "Дохід/км")
     rowDriver = 34
     For Each k In drvNames.Keys
@@ -486,7 +498,11 @@ Public Sub TC_GenerateReport(ByVal reportMode As String, ByVal startDate As Date
         End If
     Next k
     resultRow = rowDriver + 2
-    StyleHeader w, "A" & resultRow & ":L" & resultRow, "ПОРІВНЯННЯ ВОДІЇВ ЗА ДОХОДОМ ТА ВИТРАТАМИ"
+    If Len(driverFilter) = 0 Then
+        StyleHeader w, "A" & resultRow & ":L" & resultRow, "ПОРІВНЯННЯ ВОДІЇВ ЗА ДОХОДОМ ТА ВИТРАТАМИ"
+    Else
+        StyleHeader w, "A" & resultRow & ":L" & resultRow, "ФІНАНСОВІ ПОКАЗНИКИ ОБРАНОГО ВОДІЯ"
+    End If
     w.Cells(24, 14).Value = "Водій": w.Cells(24, 15).Value = "Дохід USD": w.Cells(24, 16).Value = "Витрати USD"
     idx = 0
     For Each k In drvNames.Keys
@@ -521,7 +537,11 @@ Public Sub TC_GenerateReport(ByVal reportMode As String, ByVal startDate As Date
     End With
     folder = ThisWorkbook.Path & Application.PathSeparator & "_Звіти"
     If Len(Dir(folder, vbDirectory)) = 0 Then MkDir folder
-    exportTo = folder & Application.PathSeparator & "Transport_Report_" & Format$(Now, "yyyymmdd_hhnnss") & ".pdf"
+    If Len(driverFilter) = 0 Then
+        exportTo = folder & Application.PathSeparator & "Transport_Report_ALL_" & Format$(Now, "yyyymmdd_hhnnss") & ".pdf"
+    Else
+        exportTo = folder & Application.PathSeparator & "Transport_Report_DRIVER_" & Format$(Now, "yyyymmdd_hhnnss") & ".pdf"
+    End If
     w.ExportAsFixedFormat Type:=xlTypePDF, Filename:=exportTo, Quality:=xlQualityStandard, IgnorePrintAreas:=False
     w.Activate
     ThisWorkbook.Save
