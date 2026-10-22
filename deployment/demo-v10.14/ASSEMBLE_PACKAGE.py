@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pack complete fictional v10.14 source+one-click Windows Excel installer as ZIP."""
+"""Package synthetic demo source; when given a verified XLSX, also deliver a FULL installer ZIP."""
 import argparse
 import hashlib
 import json
@@ -84,7 +84,25 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--out",default=str(ROOT/"dist"/(PREFIX+".zip")))
     parser.add_argument("--overwrite",action="store_true")
+    parser.add_argument("--base-workbook",help="Prebuilt synthetic XLSX to include in the FULL installer ZIP")
+    parser.add_argument("--require-base",action="store_true",help="Fail if no XLSX is supplied; never mislabel incomplete releases")
     args=parser.parse_args()
+    base=Path(args.base_workbook).resolve() if args.base_workbook else None
+    if args.require_base and base is None:
+        raise SystemExit("Full release requires --base-workbook: missing XLSX, refusing incomplete archive")
+    if base is not None:
+        if not base.is_file() or base.suffix.lower()!=".xlsx":
+            raise SystemExit(f"Missing valid XLSX path: {base}")
+        import xml.etree.ElementTree as ET
+        with zipfile.ZipFile(base) as wb:
+            if wb.testzip() is not None or "xl/workbook.xml" not in wb.namelist():
+                raise SystemExit("Corrupt/invalid base XLSX")
+            root=ET.fromstring(wb.read("xl/workbook.xml"))
+            ns={"s":"http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+            names={tag.attrib["name"] for tag in root.findall(".//s:sheet",ns)}
+            required={"Зміст","Нарахування","NBP_дані","Курси_NBP","Налаштування","Інструкція","Паркінги","Реєстр_водіїв","ШАБЛОН_ВОДІЯ","Водій_01","Водій_02","КІНЕЦЬ_ВОДІЇВ","Звіти"}
+            if not required.issubset(names):
+                raise SystemExit(f"Base XLSX missing expected sheets: {sorted(required-names)}")
     out=Path(args.out).resolve()
     out.parent.mkdir(parents=True,exist_ok=True)
     if out.exists() and not args.overwrite:
@@ -112,6 +130,8 @@ def main():
             z.writestr(f"{PREFIX}/data/routes_europe.json",
                        json.dumps(normalized,ensure_ascii=False,indent=2).encode("utf-8"))
             z.write(seed,arcname=f"{PREFIX}/data/demo_seed.json")
+            if base is not None:
+                z.write(base,arcname=f"{PREFIX}/Транспортний_центр_v8_робочий_Times_New_Roman.xlsx")
             z.writestr(f"{PREFIX}/START_INSTALL.cmd",INSTALL_CMD.encode("utf-8"))
             z.writestr(f"{PREFIX}/ІНСТРУКЦІЯ_ТЕСТУВАННЯ.txt",README.encode("utf-8-sig"))
         with zipfile.ZipFile(out) as z:
@@ -121,7 +141,11 @@ def main():
             assert f"{PREFIX}/data/demo_seed.json" in names
             assert f"{PREFIX}/vba/TransportStatusFX.bas" in names
             assert f"{PREFIX}/vba/TransportInsights.bas" in names
+            if base is not None:
+                assert f"{PREFIX}/Транспортний_центр_v8_робочий_Times_New_Roman.xlsx" in names
         digest=hashlib.sha256(out.read_bytes()).hexdigest()
         print(f"READY {out} bytes={out.stat().st_size} SHA256={digest}")
+        print("FULL INSTALLER + BASE XLSX INCLUDED" if base else
+              "SOURCE-ONLY ZIP: NO BASE XLSX! Use --base-workbook --require-base for actual full delivery.")
 if __name__=="__main__":
     main()
