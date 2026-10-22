@@ -95,3 +95,11 @@ assert 'DateDiff("s", mStatusLastRefresh, Now) < 20' not in events
 assert 'Workbook_SheetChange(ByVal Sh As Object' in events
 assert 'Application.EnableEvents = oldEvents' in s
 print('PASS: v10.14.7 two ledger COM snapshots, change-driven refresh and manual sync')
+
+# Avoid printer-driver overhead on every rapid Excel tab activation.
+assert 'Private mPageLayoutConfigured As Boolean' in s
+assert 'If Not mPageLayoutConfigured Then' in s
+assert s.count('mPageLayoutConfigured = True') == 1
+assert "ThisWorkbook.TC_DashboardRendered" in s
+assert "DateValue(mStatusLastRefresh) = Date" in events
+print('PASS: once-per-session print layout + same-day dashboard cache')
