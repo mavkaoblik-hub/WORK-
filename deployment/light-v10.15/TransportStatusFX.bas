@@ -105,8 +105,8 @@ Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As
     reportArea.Clear
     sheet.Range("N1").ClearContents
     With reportArea.Font
-        .Name = "Calibri"
-        .Size = 11
+        .Name = "Segoe UI"
+        .Size = 12
         .Color = RGB(20, 48, 40)
     End With
     sheet.Columns("A").ColumnWidth = 15
@@ -172,9 +172,9 @@ Private Sub TableLabels(ByVal sheet As Worksheet, ByVal r As Long, ByVal labels 
         .Font.Color = RGB(35, 84, 75)
         .Font.Bold = True
         .WrapText = True
-        .Font.Size = 11
+        .Font.Size = 12
         .VerticalAlignment = xlCenter
-        .RowHeight = 44
+        .RowHeight = 47
     End With
 End Sub
 
@@ -194,7 +194,7 @@ Private Sub KpiCard(ByVal sheet As Worksheet, ByVal startColumn As Long, ByVal c
     With label
         .Value = caption
         .Interior.Color = RGB(230, 244, 238)
-        .Font.Name = "Calibri"
+        .Font.Name = "Segoe UI"
         .Font.Size = 12
         .Font.Color = RGB(41, 99, 82)
         .Font.Bold = True
@@ -205,8 +205,8 @@ Private Sub KpiCard(ByVal sheet As Worksheet, ByVal startColumn As Long, ByVal c
     With value
         .Value = figure
         .Interior.Color = RGB(255, 255, 255)
-        .Font.Name = "Calibri"
-        .Font.Size = 20
+        .Font.Name = "Segoe UI"
+        .Font.Size = 21
         .Font.Bold = True
         .Font.Color = RGB(26, 87, 72)
         .HorizontalAlignment = xlCenter
@@ -931,7 +931,7 @@ Private Sub PrepareReadableView(ByVal ws As Worksheet)
     On Error Resume Next
     ws.Activate
     ActiveWindow.DisplayGridlines = False
-    ActiveWindow.Zoom = 90
+    ActiveWindow.Zoom = 92
     ActiveWindow.ScrollRow = 1
     ActiveWindow.ScrollColumn = 1
     On Error GoTo 0
