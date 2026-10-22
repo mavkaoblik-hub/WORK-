@@ -86,7 +86,8 @@ Private Function Money(ByVal d As Object, ByVal key As String) As Double
 End Function
 
 Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As String)
-    Dim i As Long
+    Dim i As Long, lastContentRow As Long
+    Dim reportArea As Range
     ' Chart objects are presentation-only and must never block ledger rendering.
     On Error Resume Next
     For i = sheet.ChartObjects.Count To 1 Step -1
@@ -95,7 +96,6 @@ Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As
     Err.Clear
     On Error GoTo 0
     ' Clear only the rendered report, not Excel's million-row sheet.
-    Dim lastContentRow As Long, reportArea As Range
     lastContentRow = Application.Max(120, _
         sheet.Cells(sheet.Rows.Count, 1).End(xlUp).Row, _
         sheet.Cells(sheet.Rows.Count, 12).End(xlUp).Row)
