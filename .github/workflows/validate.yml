@@ -27,6 +27,8 @@ jobs:
         run: python3 tests/check_v110_audit.py
       - name: Audit v10.12 detailed finance report and ribbon lifecycle
         run: python3 tests/check_v112_demo.py
+      - name: Audit v10.13 detailed expense ledger and monthly breakdown
+        run: python3 tests/check_v113_demo.py
 
 # This workflow deliberately does not execute VBA or Excel.
 # Full Excel COM tests require a separately provisioned Windows runner
