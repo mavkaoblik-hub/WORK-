@@ -112,7 +112,7 @@ def main():
             z.writestr(f"{PREFIX}/data/routes_europe.json",
                        json.dumps(normalized,ensure_ascii=False,indent=2).encode("utf-8"))
             z.write(seed,arcname=f"{PREFIX}/data/demo_seed.json")
-            z.writestr(f"{PREFIX}/START_INSTALL.cmd",INSTALL_CMD.encode("ascii"))
+            z.writestr(f"{PREFIX}/START_INSTALL.cmd",INSTALL_CMD.encode("utf-8"))
             z.writestr(f"{PREFIX}/ІНСТРУКЦІЯ_ТЕСТУВАННЯ.txt",README.encode("utf-8-sig"))
         with zipfile.ZipFile(out) as z:
             assert z.testzip() is None
