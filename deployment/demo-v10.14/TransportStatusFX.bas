@@ -94,23 +94,32 @@ Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As
     Next i
     Err.Clear
     On Error GoTo 0
-    sheet.UsedRange.UnMerge
-    sheet.Cells.Clear
-    sheet.Cells.Font.Name = "Times New Roman"
-    sheet.Cells.Font.Size = 10
-    sheet.Cells.Font.Color = RGB(20, 48, 40)
-    sheet.Columns("A").ColumnWidth = 20
-    sheet.Columns("B").ColumnWidth = 23
-    sheet.Columns("C").ColumnWidth = 33
-    sheet.Columns("D").ColumnWidth = 17
-    sheet.Columns("E").ColumnWidth = 16
-    sheet.Columns("F").ColumnWidth = 15
-    sheet.Columns("G").ColumnWidth = 13
-    sheet.Columns("H").ColumnWidth = 17
-    sheet.Columns("I").ColumnWidth = 20
-    sheet.Columns("J").ColumnWidth = 21
-    sheet.Columns("K").ColumnWidth = 20
-    sheet.Columns("L").ColumnWidth = 38
+    ' Clear only the rendered report, not Excel's million-row sheet.
+    Dim lastContentRow As Long, reportArea As Range
+    lastContentRow = Application.Max(120, _
+        sheet.Cells(sheet.Rows.Count, 1).End(xlUp).Row, _
+        sheet.Cells(sheet.Rows.Count, 12).End(xlUp).Row)
+    Set reportArea = sheet.Range(sheet.Cells(1, 1), sheet.Cells(lastContentRow + 40, 12))
+    reportArea.UnMerge
+    reportArea.Clear
+    sheet.Range("N1").ClearContents
+    With reportArea.Font
+        .Name = "Calibri"
+        .Size = 11
+        .Color = RGB(20, 48, 40)
+    End With
+    sheet.Columns("A").ColumnWidth = 15
+    sheet.Columns("B").ColumnWidth = 19
+    sheet.Columns("C").ColumnWidth = 23
+    sheet.Columns("D").ColumnWidth = 12
+    sheet.Columns("E").ColumnWidth = 13
+    sheet.Columns("F").ColumnWidth = 12
+    sheet.Columns("G").ColumnWidth = 14
+    sheet.Columns("H").ColumnWidth = 14
+    sheet.Columns("I").ColumnWidth = 15
+    sheet.Columns("J").ColumnWidth = 15
+    sheet.Columns("K").ColumnWidth = 13
+    sheet.Columns("L").ColumnWidth = 29
     sheet.Rows(4).RowHeight = 49
     sheet.Rows(6).RowHeight = 7
     sheet.Rows(9).RowHeight = 12
@@ -120,7 +129,7 @@ Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As
         .Value = "ТРАНСПОРТНИЙ ЦЕНТР  /  " & kind
         .Interior.Color = RGB(12, 36, 31)
         .Font.Color = RGB(244, 234, 204)
-        .Font.Size = 20
+        .Font.Size = 19
         .Font.Bold = True
         .VerticalAlignment = xlCenter
         .RowHeight = 26
@@ -128,7 +137,7 @@ Private Sub Header(ByVal sheet As Worksheet, ByVal kind As String, ByVal note As
     With sheet.Range("A3:L3")
         .Merge
         .Value = "Станом на " & Format$(Now, "dd.mm.yyyy HH:nn") & "  |  " & note
-        .Font.Size = 10
+        .Font.Size = 11
         .Font.Italic = True
         .RowHeight = 23
     End With
@@ -147,8 +156,8 @@ Private Sub Bar(ByVal sheet As Worksheet, ByVal r As Long, ByVal title As String
         .Interior.Color = RGB(23, 71, 59)
         .Font.Color = RGB(255, 255, 255)
         .Font.Bold = True
-        .Font.Size = 13
-        .RowHeight = 25
+        .Font.Size = 12
+        .RowHeight = 27
     End With
 End Sub
 
@@ -162,14 +171,16 @@ Private Sub TableLabels(ByVal sheet As Worksheet, ByVal r As Long, ByVal labels 
         .Font.Color = vbWhite
         .Font.Bold = True
         .WrapText = True
-        .RowHeight = 37
+        .Font.Size = 11
+        .VerticalAlignment = xlCenter
+        .RowHeight = 44
     End With
 End Sub
 
 Private Sub Stripe(ByVal sheet As Worksheet, ByVal r As Long)
     With sheet.Range(sheet.Cells(r, 1), sheet.Cells(r, 12))
         If r Mod 2 = 0 Then .Interior.Color = RGB(234, 243, 238) Else .Interior.Color = RGB(250, 251, 250)
-        .RowHeight = 30
+        .RowHeight = 29
     End With
 End Sub
 
@@ -182,8 +193,8 @@ Private Sub KpiCard(ByVal sheet As Worksheet, ByVal startColumn As Long, ByVal c
     With label
         .Value = caption
         .Interior.Color = RGB(37, 85, 70)
-        .Font.Name = "Times New Roman"
-        .Font.Size = 11
+        .Font.Name = "Calibri"
+        .Font.Size = 12
         .Font.Color = vbWhite
         .Font.Bold = True
         .HorizontalAlignment = xlCenter
@@ -193,8 +204,8 @@ Private Sub KpiCard(ByVal sheet As Worksheet, ByVal startColumn As Long, ByVal c
     With value
         .Value = figure
         .Interior.Color = RGB(231, 241, 235)
-        .Font.Name = "Times New Roman"
-        .Font.Size = 19
+        .Font.Name = "Calibri"
+        .Font.Size = 20
         .Font.Bold = True
         .Font.Color = RGB(13, 53, 40)
         .HorizontalAlignment = xlCenter
@@ -239,7 +250,10 @@ Private Sub DriverOverview(ByVal sheet As Worksheet, ByVal people As Object, ByV
     Next key
     If r = firstRow Then sheet.Cells(r, 1).Value = "Водіїв поки немає"
     On Error Resume Next
-    sheet.Range(sheet.Cells(firstRow, 5), sheet.Cells(Application.Max(firstRow, r - 1), 11)).NumberFormat = "#,##0.0"
+    sheet.Range(sheet.Cells(firstRow, 5), sheet.Cells(Application.Max(firstRow, r - 1), 5)).NumberFormat = "#,##0"
+    sheet.Range(sheet.Cells(firstRow, 6), sheet.Cells(Application.Max(firstRow, r - 1), 6)).NumberFormat = "0.0"
+    sheet.Range(sheet.Cells(firstRow, 7), sheet.Cells(Application.Max(firstRow, r - 1), 10)).NumberFormat = "#,##0.00"
+    sheet.Range(sheet.Cells(firstRow, 11), sheet.Cells(Application.Max(firstRow, r - 1), 11)).NumberFormat = "0.0"
     On Error GoTo 0
 End Sub
 
