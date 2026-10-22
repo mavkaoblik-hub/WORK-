@@ -147,7 +147,7 @@ jobs:
           foreach($wanted in @('DEMO_SEED.ps1','demo_seed.json','-Book $book','DEMO-only fixture injection',"$" + 'book.SaveAs($target,52)',"$" + 'book.Close($false)')) {
             if(-not $installer.Contains($wanted)) {throw ('Demo installer missing: '+$wanted)}
           }
-          foreach($wanted in @('TRANSPORT_DEMO_SEED_V1','Контакти_водіїв','Реєстр_водіїв','ШАБЛОН_ВОДІЯ','DEMO date row',
+          foreach($wanted in @('TRANSPORT_DEMO_SEED_V1','demo.drivers','demo.vehicles','demo.trip','DEMO date row',
               'TC_Рейси','TC_Витрати','Курси валют','demo.trips','demo.expenses',
               '$tripIndex -ne 75','$idx -ne 259','$template.Copy($endMark)')) {
             if(-not $seed.Contains($wanted)) {throw ('Demo source missing: '+$wanted)}
