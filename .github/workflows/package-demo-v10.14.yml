@@ -1,0 +1,61 @@
+name: Build installable demo ZIP v10.14
+on:
+  push:
+    branches:
+      - feature/v10.14-operational-analytics
+  pull_request:
+    paths:
+      - 'deployment/demo-v10.14/**'
+      - 'deployment/demo-v10.13/TransportInsights.bas'
+      - 'deployment/demo-v10.12/**'
+      - 'deployment/demo-v10.10/DEMO_SEED.ps1'
+      - 'deployment/offline-v10.9/TransportApp.bas'
+      - 'vba/TransportCenter.bas'
+      - 'data/routes_europe.json'
+      - 'tests/check_v114_demo.py'
+      - '.github/workflows/package-demo-v10.14.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source contracts
+        run: python3 tests/check_v114_demo.py
+      - name: Assemble offline ZIP with fictional test fixtures
+        run: python3 deployment/demo-v10.14/ASSEMBLE_PACKAGE.py --out dist/Transport_Center_DEMO_v10.14.zip
+      - name: Independently inspect ZIP and fixture accounting
+        run: |
+          python3 - <<'PY'
+          import json, zipfile, pathlib, io
+          p=pathlib.Path('dist/Transport_Center_DEMO_v10.14.zip')
+          with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None
+              names=z.namelist()
+              assert all(x.startswith('Транспортний_центр_DEMO_v10.14/') for x in names)
+              required=['START_INSTALL.cmd', 'INSTALL_OFFLINE.ps1', 'CREATE_DEMO_BASE.ps1',
+                        'DEMO_SEED.ps1', 'data/demo_seed.json', 'vba/TransportInsights.bas',
+                        'vba/TransportStatusFX.bas', 'vba/TransportApp.bas',
+                        'vba/TransportCenter.bas', 'data/routes_europe.json']
+              for x in required: assert 'Транспортний_центр_DEMO_v10.14/'+x in names, x
+              d=json.loads(z.read('Транспортний_центр_DEMO_v10.14/data/demo_seed.json'))
+              assert d['kind']=='TRANSPORT_DEMO_SEED_V1' and d['fictional']
+              assert len(d['drivers'])==7 and len(d['vehicles'])==9
+              assert len(d['trips'])==75 and len(d['expenses'])==259
+              assert sum(x['status']=='Завершено' for x in d['trips'])==70
+              assert sum(x['status']=='У рейсі' for x in d['trips'])==3
+              assert abs(sum(x['revenue_usd'] for x in d['trips'] if x['status']=='Завершено')-149987.91)<0.001
+              assert abs(sum(x['usd'] for x in d['expenses'])-48211.73)<0.001
+          print("ZIP, 75 fictional trips, 259 expenses, financial fixtures: PASS")
+          PY
+      - name: Upload complete downloadable offline installer ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Transport_Center_DEMO_v10.14
+          path: dist/Transport_Center_DEMO_v10.14.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
