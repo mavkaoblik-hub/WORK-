@@ -1,0 +1,145 @@
+﻿Option Explicit
+
+' Refresh offline only: no HTTP, no timers, no online NBP access.
+Private mStatusRefreshBusy As Boolean
+Private mStatusRefreshWarned As Boolean
+Private mStatusDirty As Boolean
+Private mStatusLastRefresh As Date
+Private mRibbonOriginalVisible As Boolean
+Private mRibbonOriginalKnown As Boolean
+Private mRibbonHiddenForTC As Boolean
+
+' Ribbon is an Excel-APPLICATION setting, not a worksheet setting.
+' Restore it when another workbook becomes active or this workbook closes.
+Private Sub RibbonRememberState()
+    If mRibbonOriginalKnown Then Exit Sub
+    On Error GoTo DefaultVisible
+    mRibbonOriginalVisible = CBool(Application.CommandBars("Ribbon").Visible)
+    mRibbonOriginalKnown = True
+    Exit Sub
+DefaultVisible:
+    Err.Clear
+    mRibbonOriginalVisible = True
+    mRibbonOriginalKnown = True
+End Sub
+
+Private Sub RibbonForTransport()
+    On Error Resume Next
+    If Application.ActiveWorkbook Is Nothing Then Exit Sub
+    If Not Application.ActiveWorkbook Is ThisWorkbook Then Exit Sub
+    RibbonRememberState
+    Application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",False)"
+    If Err.Number <> 0 Then
+        Err.Clear
+        Application.CommandBars("Ribbon").Visible = False
+    End If
+    mRibbonHiddenForTC = True
+    On Error GoTo 0
+End Sub
+
+Private Sub RibbonRestore()
+    On Error Resume Next
+    If Not mRibbonHiddenForTC Then Exit Sub
+    If Not mRibbonOriginalKnown Then Exit Sub
+    If mRibbonOriginalVisible Then
+        Application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",True)"
+        If Err.Number <> 0 Then
+            Err.Clear
+            Application.CommandBars("Ribbon").Visible = True
+        End If
+    Else
+        Application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",False)"
+    End If
+    mRibbonHiddenForTC = False
+    On Error GoTo 0
+End Sub
+
+Private Sub Workbook_Open()
+    RefreshStatusIfRequired True
+    RibbonForTransport
+End Sub
+
+Private Sub Workbook_Activate()
+    RibbonForTransport
+End Sub
+
+Private Sub Workbook_Deactivate()
+    RibbonRestore
+End Sub
+
+Private Sub Workbook_WindowActivate(ByVal Wn As Window)
+    RibbonForTransport
+End Sub
+
+Private Sub Workbook_WindowDeactivate(ByVal Wn As Window)
+    RibbonRestore
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    RibbonRestore
+End Sub
+
+Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+    ' Avoid repeated dashboards when only navigating tabs. Data edits invalidate cache.
+    On Error Resume Next
+    Select Case Sh.Name
+        Case "TC_Рейси", "TC_Витрати", "Контакти_водіїв", "Маршрути_Європа", "Курси валют"
+            mStatusDirty = True
+    End Select
+    On Error GoTo 0
+End Sub
+
+Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+    On Error GoTo QuietExit
+    If Sh.Name = "Поточний стан" Or Sh.Name = "Архів рейсів" Then
+        RefreshStatusIfRequired False
+    End If
+QuietExit:
+End Sub
+
+' Called by the explicit Refresh button as well as Workbook_Open.
+Public Sub TC_DashboardRendered()
+    mStatusLastRefresh = Now
+    mStatusDirty = False
+    mStatusRefreshWarned = False
+End Sub
+
+Private Sub RefreshStatusIfRequired(ByVal fromOpen As Boolean)
+    Dim oldEvents As Boolean, oldUpdating As Boolean
+    If mStatusRefreshBusy Then Exit Sub
+    ' Rebuild only after ledger edits, workbook open, or day rollover.
+    If Not fromOpen And Not mStatusDirty Then
+        If mStatusLastRefresh > 0 Then
+            If DateValue(mStatusLastRefresh) = Date Then Exit Sub
+        End If
+    End If
+    mStatusRefreshBusy = True
+    oldEvents = Application.EnableEvents
+    oldUpdating = Application.ScreenUpdating
+    On Error GoTo Failed
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    TransportStatusFX.TC_RefreshBoth
+    TC_DashboardRendered
+    If fromOpen Then
+        ThisWorkbook.Worksheets("Зміст").Activate
+    Else
+        ActiveWindow.DisplayGridlines = False
+    End If
+Done:
+    Application.ScreenUpdating = oldUpdating
+    Application.EnableEvents = oldEvents
+    mStatusRefreshBusy = False
+    Exit Sub
+Failed:
+    ' Never block opening the workbook. Surface a single actionable error
+    ' rather than silently leaving the operational screens blank.
+    mStatusDirty = True
+    Debug.Print "TC status refresh: " & Err.Number & " " & Err.Description
+    If Not mStatusRefreshWarned Then
+        mStatusRefreshWarned = True
+        MsgBox "Автоматичне оновлення стану не виконано (" & Err.Number & "): " & Err.Description & vbCrLf & _
+               "Дані у журналах не змінено. Скористайтеся кнопкою Оновити стан.", vbExclamation, "Транспортний центр"
+    End If
+    Resume Done
+End Sub
