@@ -27,18 +27,18 @@ $ws.Range('B2:Q4').Interior.Color=(RGB 255 255 255)
 $ws.Range('B2:Q3').Merge()
 $ws.Range('B2').Value2='ТРАНСПОРТНИЙ ЦЕНТР'
 $ws.Range('B2').Font.Bold=$true
-$ws.Range('B2').Font.Size=21
+$ws.Range('B2').Font.Size=23
 $ws.Range('B2').Font.Color=(RGB 30 82 69)
 $ws.Range('B2:Q3').VerticalAlignment=-4108
 $ws.Range('B4:Q4').Merge()
 $ws.Range('B4').Value2='Робочий кабінет   /   рейси, автопарк, витрати й аналітика'
 $ws.Range('B4').Font.Color=(RGB 107 123 129)
-$ws.Range('B4').Font.Size=10
+$ws.Range('B4').Font.Size=11
 $ws.Rows.Item(5).RowHeight=17
 $ws.Range('B6:Q6').Merge()
 $ws.Range('B6').Value2='ОГЛЯД ДІЯЛЬНОСТІ'
 $ws.Range('B6').Font.Bold=$true
-$ws.Range('B6').Font.Size=11
+$ws.Range('B6').Font.Size=12
 $ws.Range('B6').Font.Color=(RGB 42 92 82)
 foreach($row in @(7,11)){$ws.Rows.Item($row).RowHeight=25}
 foreach($row in @(8,12)){$ws.Rows.Item($row).RowHeight=26}
@@ -62,11 +62,11 @@ foreach($item in $cards){
   $header.Merge()
   $value.Merge()
   $ws.Range([string]$item[3]).Value2=[string]$item[4]
-  $ws.Range([string]$item[3]).Font.Size=10
+  $ws.Range([string]$item[3]).Font.Size=11
   $ws.Range([string]$item[3]).Font.Color=(RGB 104 122 126)
   $ws.Range([string]$item[3]).Font.Bold=$true
   $ws.Range([string]$item[5]).Formula=([string]$item[6]).Replace('~',[string][char]39)
-  $ws.Range([string]$item[5]).Font.Size=19
+  $ws.Range([string]$item[5]).Font.Size=21
   $ws.Range([string]$item[5]).Font.Bold=$true
   $ws.Range([string]$item[5]).Font.Color=(RGB 26 87 72)
   $header.HorizontalAlignment=-4108
@@ -88,12 +88,12 @@ foreach($line in $groupHeaders){
   $r.Value2=[string]$line[1]
   $r.Interior.Color=(RGB 226 240 234)
   $r.Font.Color=(RGB 30 87 73)
-  $r.Font.Size=11
+  $r.Font.Size=12
   $r.Font.Bold=$true
   $r.RowHeight=28
   $r.VerticalAlignment=-4108
 }
-foreach($r in @(17,22,27,32)){$ws.Rows.Item($r).RowHeight=44}
+foreach($r in @(17,22,27,32)){$ws.Rows.Item($r).RowHeight=45}
 $ws.Range('B36:Q37').Merge()
 $ws.Range('B36').Value2='Дані зберігаються у внутрішніх журналах. Панель відображає облікові показники, а дії відкривають окремі форми.'
 $ws.Range('B36:Q37').Interior.Color=(RGB 235 245 240)
@@ -102,7 +102,7 @@ $ws.Range('B36').Font.Size=10
 $ws.Range('B36:Q37').WrapText=$true
 $ws.Range('B36:Q37').VerticalAlignment=-4108
 $ws.Range('B40:Q40').Merge()
-$ws.Range('B40').Value2='CLEAN · v10.15   |   Без демонстраційних даних'
+$ws.Range('B40').Value2='CLEAN · v10.15.1   |   Без демонстраційних даних'
 $ws.Range('B40').Font.Color=(RGB 137 154 158)
 $ws.Range('B40').Font.Size=10
-Write-Host 'v10.15: light dashboard created without touching ledger records.' -ForegroundColor Green
+Write-Host 'v10.15.1: light dashboard polished; ledgers unchanged.' -ForegroundColor Green

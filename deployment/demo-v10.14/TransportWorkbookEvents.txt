@@ -5,6 +5,8 @@ Private mStatusRefreshBusy As Boolean
 Private mStatusRefreshWarned As Boolean
 Private mStatusDirty As Boolean
 Private mStatusLastRefresh As Date
+Private mArchiveFirstView As Boolean
+Private mLiveFirstView As Boolean
 Private mRibbonOriginalVisible As Boolean
 Private mRibbonOriginalKnown As Boolean
 Private mRibbonHiddenForTC As Boolean
@@ -55,6 +57,8 @@ Private Sub RibbonRestore()
 End Sub
 
 Private Sub Workbook_Open()
+    mArchiveFirstView = True
+    mLiveFirstView = True
     RefreshStatusIfRequired True
     RibbonForTransport
 End Sub
@@ -93,6 +97,22 @@ Private Sub Workbook_SheetActivate(ByVal Sh As Object)
     On Error GoTo QuietExit
     If Sh.Name = "Поточний стан" Or Sh.Name = "Архів рейсів" Then
         RefreshStatusIfRequired False
+        ' First visit only: show the header instead of a saved scroll offset.
+        ' Later visits preserve the user's position and zoom.
+        If (Sh.Name = "Архів рейсів" And mArchiveFirstView) Or _
+           (Sh.Name = "Поточний стан" And mLiveFirstView) Then
+            If Not Application.ActiveWindow Is Nothing Then
+                ActiveWindow.ScrollRow = 1
+                ActiveWindow.ScrollColumn = 1
+                ActiveWindow.Zoom = 92
+                ActiveWindow.DisplayGridlines = False
+            End If
+            If Sh.Name = "Архів рейсів" Then
+                mArchiveFirstView = False
+            Else
+                mLiveFirstView = False
+            End If
+        End If
     End If
 QuietExit:
 End Sub

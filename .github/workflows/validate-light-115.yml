@@ -3,9 +3,11 @@ on:
   push:
     branches:
       - feature/v10.15-light-dashboard
+      - feature/v10.15.1-light-polish
   pull_request:
     paths:
       - 'deployment/light-v10.15/**'
+      - 'deployment/demo-v10.14/TransportWorkbookEvents.txt'
       - 'tests/check_light_115.py'
       - '.github/workflows/validate-light-115.yml'
   workflow_dispatch:

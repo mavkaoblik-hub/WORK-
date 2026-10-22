@@ -15,7 +15,7 @@ function Button($ws,[string]$label,[string]$proc,[double]$x,[double]$y){
   $s = $ws.Shapes.AddShape(5,$x,$y,185,34)
   $s.TextFrame.Characters().Text = $label
   $s.TextFrame.Characters().Font.Name = 'Segoe UI'
-  $s.TextFrame.Characters().Font.Size = 11
+  $s.TextFrame.Characters().Font.Size = 12
   $s.OnAction = "'Транспортний_центр.xlsm'!TransportCenter.$proc"
   $s.Placement=3
   try{
@@ -27,7 +27,7 @@ function Button($ws,[string]$label,[string]$proc,[double]$x,[double]$y){
       $s.Line.ForeColor.RGB=(206+223*256+218*65536)
       $s.TextFrame.Characters().Font.Color=(36+91*256+80*65536)
       $s.Width=176
-      $s.Height=34
+      $s.Height=37
     }else{
       $s.Fill.ForeColor.RGB=(233+246*256+240*65536)
       $s.Line.Visible=$true
@@ -547,7 +547,7 @@ try {
      # VBIDE.UserForm Designer is NOT guaranteed to expose Width/Height via
      # PowerShell COM. Set design-time size and caption via VBComponent.Properties.
      # This is the documented interface for programmatically-created UserForms.
-     $uiComponent.Properties.Item('Caption').Value='Транспортний центр | Робоча панель'
+     $uiComponent.Properties.Item('Caption').Value='Транспортний центр | Світла панель'
      $uiComponent.Properties.Item('Width').Value=710
      $uiComponent.Properties.Item('Height').Value=575
      function FormCtrl([string]$kind,[string]$name,[string]$caption,[int]$left,[int]$top,[int]$width,[int]$height){
@@ -665,13 +665,13 @@ End Sub
   foreach($other in $book.Worksheets){
     if($other.Name -ne 'Зміст' -and $other.Name -ne 'Поточний стан' -and $other.Name -ne 'Архів рейсів' -and $other.Name -ne 'Курси валют'){$other.Visible=0}
   }
-  try {$excel.ActiveWindow.DisplayGridlines=$false; $excel.ActiveWindow.Zoom=85; $excel.ActiveWindow.ScrollRow=1; $excel.ActiveWindow.ScrollColumn=1} catch {}
+  try {$excel.ActiveWindow.DisplayGridlines=$false; $excel.ActiveWindow.Zoom=92; $excel.ActiveWindow.ScrollRow=1; $excel.ActiveWindow.ScrollColumn=1} catch {}
   foreach($view in @($index,$live,$archive,$rates)) {
     try {
       $view.Activate()
       $excel.ActiveWindow.DisplayGridlines=$false
       $excel.ActiveWindow.FreezePanes=$false
-      $excel.ActiveWindow.Zoom=85
+      $excel.ActiveWindow.Zoom=92
       $excel.ActiveWindow.ScrollRow=1
       $excel.ActiveWindow.ScrollColumn=1
     } catch { Write-Warning ('Could not configure view for '+$view.Name+': '+$_.Exception.Message) }
