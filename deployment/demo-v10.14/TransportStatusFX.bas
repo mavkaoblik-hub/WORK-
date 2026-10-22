@@ -899,6 +899,7 @@ Public Sub TC_RefreshBoth()
     On Error GoTo Failed
     Application.ScreenUpdating = oldUpdating
     Application.EnableEvents = oldEvents
+    ThisWorkbook.TC_DashboardRendered
     Exit Sub
 Failed:
     ' Preserve original error stage and number; the previous handler hid the cause.
