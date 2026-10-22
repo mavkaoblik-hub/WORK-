@@ -32,8 +32,9 @@ def main():
     parser.add_argument("--out",required=True)
     args=parser.parse_args()
     r=json.loads(Path(args.routes).read_text(encoding="utf-8-sig"))
-    assert isinstance(r,list) and len(r)==114
-    route_ids=[str(x["id"]) for x in r]
+    routes=r["routes"] if isinstance(r,dict) else r
+    assert isinstance(routes,list) and len(routes)==114
+    route_ids=[str(x["id"]) for x in routes]
     rng=random.Random(SEED)
     surnames=["Тестовий","Прикладний","Умовний","Навчальний","Демо","Зразковий","Макетний"]
     names=["Андрій","Олена","Петро","Марія","Іван","Наталія","Максим"]
