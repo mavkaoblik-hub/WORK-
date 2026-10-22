@@ -742,22 +742,26 @@ End Sub
     Write-Warning 'Excel did not accept automatic calculation mode; trying a single calculation before save.'
     try { $excel.Calculate() } catch { Write-Warning 'Manual recalculation is available with F9.' }
   }
-  # A VBA crash must NEVER be reported as a successful install.
-  # Store the produced XLSM for diagnosis, then throw at the end of verification.
+  # Save the actual macro-enabled workbook BEFORE running any injected VBA.
+  # Previous installers ran code while the workbook was still an .xlsx container.
+  $index.Activate()
+  $book.SaveAs($target,52)
+  Check (Test-Path -LiteralPath $target) 'Excel не створив нову книгу XLSM.'
+  # Strict VBA runtime smoke test, after the complete XLSM is present.
   $refreshReady = $false
   $refreshFailure = ''
   try {
     $runName = "'" + $book.Name + "'!TransportStatusFX.TC_RefreshBoth"
     [void]$excel.Run($runName)
     $refreshReady = $true
-    Write-Host 'DEMO status/archive VBA smoke test succeeded.' -ForegroundColor Green
+    Write-Host 'DEMO status/archive smoke test AFTER SaveAs XLSM: SUCCESS' -ForegroundColor Green
   } catch {
     $refreshFailure = $_.Exception.ToString()
-    Write-Warning ('VBA smoke test FAILED; XLSM only for debugging: ' + $_.Exception.Message)
+    Write-Warning ('VBA smoke test FAILED after SaveAs. XLSM is only for diagnostics: ' + $_.Exception.Message)
   }
+  # Preserve both the recalculated data and/or diagnostic cell N1 for inspection.
   $index.Activate()
-  $book.SaveAs($target,52)
-  Check (Test-Path -LiteralPath $target) 'Excel не створив нову книгу XLSM.'
+  $book.Save()
   # SaveAs does NOT close the workbook. File.OpenRead while Excel still owns the
   # XLSM may throw: 'The process cannot access the file ... another process'.
   # Close ONLY the workbook opened by our private Excel COM instance, then quit.
@@ -801,7 +805,7 @@ End Sub
   if(-not(Test-Path -LiteralPath $backup)){[void](New-Item -Path $backup -ItemType Directory)}
   if (-not $refreshReady) {
       $diagnostic = Join-Path $dir 'VBA_SMOKE_TEST_FAILED.txt'
-      @('Transport Center v10.14.3: VBA refresh smoke test FAILED.',
+      @('Transport Center v10.14.5: VBA refresh smoke test FAILED after SaveAs.',
         ('Time: '+(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')),
         ('Workbook: '+$target),
         ('Details: '+$refreshFailure),
