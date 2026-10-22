@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate VBA and installer source
         run: python3 tests/check_project.py
+      - name: Verify v10.6 modal list lifetime and modes
+        run: python3 tests/check_v106_modal.py
 
 # This workflow deliberately does not execute VBA or Excel.
 # Full Excel COM tests require a separately provisioned Windows runner
